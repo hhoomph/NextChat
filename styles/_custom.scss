@@ -1,0 +1,31 @@
+@import "~bootstrap/scss/bootstrap";
+@import "~nprogress/nprogress.css";
+$font_path: "/static/font/";
+@font-face {
+  font-family: "IranSans";
+  src: url("#{$font_path}iransansweb.ttf") format("TrueType");
+}
+$primary: #f9b714;
+$secondary: #ffcd39d1;
+$success: #198754;
+$info: #664d03;
+$warning: #ffc107;
+$danger: #dc3545;
+$light: #ffe69b;
+$dark: #535454;
+$darker: #212529;
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark,
+);
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}

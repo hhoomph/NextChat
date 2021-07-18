@@ -1,0 +1,1 @@
+You can simply put files inside this folder to not precache them without config this.
