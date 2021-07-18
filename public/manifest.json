@@ -1,0 +1,27 @@
+{
+  "name": "NextChat",
+  "short_name": "NextChat",
+  "description": "NextChat Application With Nextjs MongoDB and Socket.io",
+  "theme_color": "#ffffff",
+  "background_color": "#ffc107",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "splash_pages": null,
+  "permissions": ["notifications", "webRequest"],
+  "author": "@hhoomph"
+}
