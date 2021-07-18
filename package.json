@@ -1,6 +1,6 @@
 {
   "name": "NextChat",
-  "description": "Chat application with nextjs mongoDb and socket-io",
+  "description": "Chat application with nextjs mongoDb and socket-io and typescript",
   "version": "0.1.0",
   "private": true,
   "author": "hh.oomph@gmail.com",

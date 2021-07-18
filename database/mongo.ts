@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 const dbName = process.env.DBName;
-const dbUrl = process?.env?.DATABASE_URL !== undefined ? process?.env?.DATABASE_URL.toString() : "mongodb://localhost:27017/";
-// const dbUrl = `mongodb+srv://oomph:<${process?.env?.DBPass}>@cluster0.xqf1t.mongodb.net/${process.env.DBName}?retryWrites=true&w=majority`
+// const dbUrl = process?.env?.DATABASE_URL !== undefined ? process?.env?.DATABASE_URL.toString() : "mongodb://localhost:27017/";
+const dbUrl = `mongodb+srv://oomph:<${process?.env?.DBPass}>@cluster0.xqf1t.mongodb.net/${process.env.DBName}?retryWrites=true&w=majority`;
 // connecting to mongo
 // const mongoDb = mongoose.connect(dbUrl + dbName, {
 //   useNewUrlParser: true,
@@ -60,7 +60,8 @@ async function connectDB() {
     //   mongoose.set('useNewUrlParser', true);
     //   return mongoose;
     // });
-    cached.promise = mongoose.connect(dbUrl + dbName, opts).then((mongoose) => {
+    // cached.promise = mongoose.connect(dbUrl + dbName, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(dbUrl, opts).then((mongoose) => {
       return mongoose;
     });
   }
