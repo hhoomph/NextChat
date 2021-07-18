@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 const dbName = process.env.DBName;
 // const dbUrl = process?.env?.DATABASE_URL !== undefined ? process?.env?.DATABASE_URL.toString() : "mongodb://localhost:27017/";
-const dbUrl = `mongodb+srv://oomph:<${process?.env?.DBPass}>@cluster0.xqf1t.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+const dbUrl =
+  process.env.NODE_ENV !== "production"
+    ? process?.env?.DATABASE_URL.toString()
+    : `mongodb+srv://oomph:<${process?.env?.DBPass}>@cluster0.xqf1t.mongodb.net/${dbName}?retryWrites=true&w=majority`;
 // connecting to mongo
 // const mongoDb = mongoose.connect(dbUrl + dbName, {
 //   useNewUrlParser: true,
