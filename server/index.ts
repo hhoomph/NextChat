@@ -22,7 +22,7 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 const expressApp = express();
-const baseUrl = "http://localhost:" + port;
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com:" + port;
 const SECRET = process.env.SECRET || "a92955bcf0e92b1deaea647e706bbc9f";
 const socketOption = {
   maxHttpBufferSize: 5 * 1024 * 1024,

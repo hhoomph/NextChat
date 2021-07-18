@@ -6,7 +6,7 @@ const SocketIoContext = React.createContext<Socket>({} as Socket);
 type SocketIoProviderProps = React.PropsWithChildren<{}>;
 const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
-const baseUrl = "http://localhost:" + port;
+const baseUrl = process.env.NODE_ENV !== "production"  ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com:" + port;
 const initializedSocket = socketIo(baseUrl, {
   withCredentials: true,
   query: token ? { token } : undefined,
