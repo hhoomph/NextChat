@@ -2,7 +2,7 @@
 import React, { FC, useEffect, useState } from "react";
 import { User, MessageType } from "../types/Types";
 import Image from "next/image";
-import { useSocketIo } from "../contexts/SocketIoContext";
+import { useSocketIo, useSocketListener } from "../contexts/SocketIoContext";
 import { useUser } from "../contexts/UserContext";
 interface Props {
   user: User | undefined;
@@ -24,16 +24,11 @@ const Message: FC<Props> = ({ user = defaultUser, message }: Props) => {
       socket.emit("read_message", message);
     }
   }, []);
-  useEffect(() => {
-    socket.on("message_readed", (res) => {
-      if (res._id == message._id) {
-        setRead(true);
-      }
-    });
-    return () => {
-      socket.off("message_readed");
-    };
-  }, [socket]);
+  useSocketListener("message_readed", (res: MessageType) => {
+    if (res._id == message._id) {
+      setRead(true);
+    }
+  });
   return (
     <div className={"card mb-2 border-secondary" + _class}>
       <div className="card-header">{message.sender}</div>

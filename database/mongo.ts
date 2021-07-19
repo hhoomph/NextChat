@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 const dbName = process.env.DBName;
-// const dbUrl = process?.env?.DATABASE_URL !== undefined ? process?.env?.DATABASE_URL.toString() : "mongodb://localhost:27017/";
+// const dbUrl = process?.env?.DATABASE_URL !== undefined ? process?.env?.DATABASE_URL.toString() + dbName : "mongodb://localhost:27017/" + dbName;
 const dbUrl =
   process.env.NODE_ENV !== "production"
     ? process?.env?.DATABASE_URL.toString() + dbName

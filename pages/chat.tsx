@@ -114,12 +114,12 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   useEffect(() => {
     socket.open();
     socket.emit("initUser");
-    if (socket.connected) {
-      return () => {
-        // socket.close();
-        // socket.disconnect();
-      };
-    }
+    // if (socket.connected) {
+    //   return () => {
+    //     socket.close();
+    //     socket.disconnect();
+    //   };
+    // }
   }, []);
   // useEffect(() => {
   //   socket.on("new_message", (data) => {
@@ -198,7 +198,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
       setMessage("");
       // setAllMessage([...allMessage, data]);
     }
-  }, [message, receiverUser.username, socket, user?.username]);
+  }, [message, receiverUser.username, user?.username]);
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === "Enter") {
       event.preventDefault();

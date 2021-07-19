@@ -8,6 +8,7 @@ const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
 const baseUrl =
   process.env.NODE_ENV !== "production" ? "http://localhost:".replace(/^http/, "ws") + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
+// const baseUrl = "http://localhost:".replace(/^http/, "ws") + port;
 const initializedSocket = socketIo(baseUrl, {
   withCredentials: true,
   query: token ? { token } : undefined,
