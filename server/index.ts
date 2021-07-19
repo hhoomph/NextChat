@@ -108,12 +108,14 @@ app
         let twoUsr = data.sender + "," + data.receiver;
         let array = twoUsr.split(",").sort();
         const conversationId = `${array[0]}_${array[1]}`;
+        const createdAt = new Date().getTime();
         try {
           const res = await MessageModel.postMessage(<MessageType>{
             sender: data.sender,
             receiver: data.receiver,
             content: data.content,
             conversationId: conversationId,
+            createdAt: createdAt,
             read: false,
           });
           if (res) {
@@ -133,6 +135,17 @@ app
             // io.to(result2.socketId).emit("new_message", res);
             // socket.to(socket.id).emit("new_message", res);
             // io.to(socket.id).to(result2[0].socketId).emit("new_message", res);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      });
+      socket.on("read_message", async (data) => {
+        let id = data._id;
+        try {
+          const res = await MessageModel.updateRead(id);
+          if (res) {
+            io.emit("message_readed", res.res);
           }
         } catch (e) {
           console.log(e);

@@ -22,9 +22,9 @@ const MessageSchema = new mongoose.Schema<MessageType>(
     collection: "message",
   }
 );
-MessageSchema.statics.postMessage = async function ({ sender, receiver, content, conversationId, read }: MessageType) {
+MessageSchema.statics.postMessage = async function ({ sender, receiver, content, conversationId, createdAt, read }: MessageType) {
   try {
-    const result = await this.create({ sender, receiver, content, conversationId, read });
+    const result = await this.create({ sender, receiver, content, conversationId, createdAt, read });
     return result;
   } catch (error) {
     throw error;
@@ -62,6 +62,7 @@ MessageSchema.statics.updateRead = async function (id) {
     if (request) {
       return {
         message: "ok",
+        res:request
       };
     } else {
       return {

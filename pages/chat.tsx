@@ -188,7 +188,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
     );
   }, [showEmojiPicker]);
   const sendMessage = useCallback(() => {
-    if (message != "") {
+    if (message != "" && receiverUser.username) {
       const data: MessageType = {
         sender: user?.username,
         receiver: receiverUser.username,
