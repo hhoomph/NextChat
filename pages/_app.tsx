@@ -4,6 +4,7 @@ import Router from "next/router";
 import NProgress from "nprogress";
 import SocketIoProvider from "../contexts/SocketIoContext";
 import { ReceiverProvider } from "./../contexts/ReceiverContext";
+import { UserProvider } from "./../contexts/UserContext";
 import "../styles/main.scss";
 Router.events.on("routeChangeStart", () => NProgress.start());
 Router.events.on("routeChangeComplete", () => NProgress.done());
@@ -15,9 +16,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover" />
       </Head>
       <SocketIoProvider>
-        <ReceiverProvider>
-          <Component {...pageProps} />
-        </ReceiverProvider>
+        <UserProvider>
+          <ReceiverProvider>
+            <Component {...pageProps} />
+          </ReceiverProvider>
+        </UserProvider>
       </SocketIoProvider>
     </>
   );

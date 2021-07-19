@@ -47,14 +47,23 @@ const UserButton: FC<Props> = ({ user = defaultUser, newMsg, toggleNeMsg }: Prop
     socket.on("disconnected", () => {
       checkOnline();
     });
+    return () => {
+      setIsOnline(false); // This worked for me
+    };
   }, [checkOnline, socket, user]);
   useEffect(() => {
     socket.on("connected", () => {
       checkOnline();
     });
+    return () => {
+      setIsOnline(false); // This worked for me
+    };
   }, [checkOnline, socket, user]);
   useEffect(() => {
     checkOnline();
+    return () => {
+      setIsOnline(false); // This worked for me
+    };
   }, [user, receiverUser, checkOnline]);
   const active = receiverUser.username == user.username ? " active" : "";
   return (

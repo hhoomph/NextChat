@@ -62,6 +62,7 @@ app
       return handle(req, res);
     });
     // Socket Code
+    let connectedPeers: string[] = [];
     const io = new Server(httpServer, socketOption);
     io.use(function (socket: ISocket, next) {
       if (socket.handshake.query && socket.handshake.query.token) {
@@ -78,6 +79,7 @@ app
       }
     });
     io.on("connection", async (socket: ISocket) => {
+      connectedPeers.push(socket.id.toString());
       io.emit("connected", socket.user);
       socket.on("initUser", async () => {
         // const userId = new ObjectID(socket.user?._id);
@@ -142,6 +144,10 @@ app
           // Delete User From Online Collection
           await OnlineModel.deleteOnline(socket.user?.username);
           socket.removeAllListeners();
+          const newConnectedPeers = connectedPeers.filter((peerSocketId) => {
+            peerSocketId !== socket.id;
+          });
+          connectedPeers = newConnectedPeers;
           io.socketsLeave(socket.id);
           io.emit("disconnected", socket.user);
         } catch (e) {

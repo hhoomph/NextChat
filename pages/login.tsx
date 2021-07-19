@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Layout from "../components/Layout";
 import fetchData from "../utils/fetchData";
-import { login } from "../utils/auth";
+import { login, verifyToken } from "../utils/auth";
+import { useUser } from "../contexts/UserContext";
 export default function Login() {
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState("");
+  const { setCurrentUser } = useUser();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors("");
@@ -21,6 +23,8 @@ export default function Login() {
     if (response?.status === 200) {
       const { token } = response;
       login(token, remember);
+      const profile = verifyToken(token.toString());
+      setCurrentUser(profile?.user);
     } else if (response?.status === 404) {
       // setFieldError("username", "No such user exists.");
       setErrors(response?.message);

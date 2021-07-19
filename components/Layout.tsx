@@ -10,6 +10,7 @@ import { User } from "../types/Types";
 import Search from "./Search";
 import { CSSTransition } from "react-transition-group";
 import { useSocketIo } from "../contexts/SocketIoContext";
+import { useUser } from "../contexts/UserContext";
 // const token = jsCookie.get("token");
 // import Script from "next/script";
 type Props = {
@@ -18,7 +19,8 @@ type Props = {
   user?: User;
 };
 const Layout = ({ children, title = "This is the default title", user }: Props) => {
-  const userName = user?.username || null;
+  const { currentUser, setCurrentUser } = useUser();
+  const userName = currentUser && currentUser.username ? currentUser.username : user?.username !== undefined ? user.username : false;
   const [menu, setMenu] = useState<boolean>(false);
   const toggleMenu = () => {
     setMenu(!menu);
@@ -29,10 +31,12 @@ const Layout = ({ children, title = "This is the default title", user }: Props) 
   // const router = useRouter();
   const copyRightDate = new Date().getFullYear();
   const socket = useSocketIo();
-  const handleLogout = () => {
+  const handleLogout = React.useCallback(() => {
     socket.disconnect();
     logout();
-  };
+    setCurrentUser(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, setCurrentUser]);
   return (
     <div className="container-fluid min-vh-100">
       {/* <Script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></Script> */}
@@ -71,6 +75,15 @@ const Layout = ({ children, title = "This is the default title", user }: Props) 
                   </a>
                 </ActiveLink>
               </li> */}
+                  {userName && (
+                    <li className="nav-item">
+                      <ActiveLink href="/chat">
+                        <a className="nav-link" aria-current="page" href="#">
+                          {userName}
+                        </a>
+                      </ActiveLink>
+                    </li>
+                  )}
                   {!userName && (
                     <>
                       <li className="nav-item">
@@ -98,7 +111,7 @@ const Layout = ({ children, title = "This is the default title", user }: Props) 
                   </li>
                   {userName && (
                     <li className="nav-item" style={{ cursor: "pointer" }}>
-                      <a className="nav-link" aria-current="page" style={{ color: "#f57c00" }} onClick={handleLogout}>
+                      <a className="nav-link" aria-current="page" style={{ color: "#e91e63" }} onClick={handleLogout}>
                         خروج
                       </a>
                     </li>
@@ -114,11 +127,11 @@ const Layout = ({ children, title = "This is the default title", user }: Props) 
       <footer className="text-center footerColor2">
         <hr />
         <p>
-          Copyright &copy; {copyRightDate}{" "}
+          Copyright &copy; {copyRightDate}
           <a className="footerColor" href="mailto:hh.oomph@gmail.com">
             {" "}
             H.H{" "}
-          </a>{" "}
+          </a>
           All Rights Reserved
         </p>
       </footer>

@@ -1,5 +1,5 @@
 {
-  "name": "NextChat",
+  "name": "nextchat",
   "description": "Chat application with nextjs mongoDb and socket-io and typescript",
   "version": "0.1.0",
   "private": true,

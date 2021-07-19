@@ -14,7 +14,7 @@ const Message: FC<Props> = ({ user = defaultUser, message }: Props) => {
   let _class = user.username === message.sender ? " message_me " : " message_from ";
   let date = message?.createdAt ? new Date(message?.createdAt) : new Date();
   return (
-    <div className={"card mb-2 border-warning" + _class}>
+    <div className={"card mb-2 border-secondary" + _class}>
       <div className="card-header">{message.sender}</div>
       <div className="card-body">{message.content}</div>
       <footer className="blockquote-footer mt-1">

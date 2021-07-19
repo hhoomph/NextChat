@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Layout from "../components/Layout";
 import fetchData from "../utils/fetchData";
-import { login } from "../utils/auth";
+import { login, verifyToken } from "../utils/auth";
+import { useUser } from "../contexts/UserContext";
 export default function Register() {
   const [password, setPassword] = useState("");
   const [retypePassword, setRetypePassword] = useState("");
   const [userName, setUserName] = useState("");
   const [errors, setErrors] = useState("");
+  const { setCurrentUser } = useUser();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors("");
@@ -22,6 +24,8 @@ export default function Register() {
       if (response?.status === 200) {
         const { token } = response;
         login(token, false);
+        const profile = verifyToken(token.toString());
+        setCurrentUser(profile?.user);
       } else if (response?.status === 409) {
         // setFieldError("username", "That username is already taken.");
         setErrors(response?.message);

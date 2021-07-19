@@ -268,8 +268,8 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
               <h4>{receiverUser.username}</h4>
             </div>
           )}
-          <div className="col-4 col-md-4 col-lg-3 border-start border-warning min_h justify-content-center pt-2 users">{showUsers}</div>
-          <div className="col-8 col-md-8 col-lg-9 border-warning min_h messages" id="messages_wrapper">
+          <div className="col-4 col-md-4 col-lg-3 border-start border_color min_h justify-content-center pt-2 users">{showUsers}</div>
+          <div className="col-8 col-md-8 col-lg-9 border_color min_h messages" id="messages_wrapper">
             <Element name="messages_wrapper">
               {receiverUser.username && (
                 <div className="dot_menu_wrapper">

@@ -71,7 +71,7 @@ const Search = ({ user }: Props) => {
               handleSearch(e.target.value);
             }}
           />
-          <button className="btn btn-outline-warning" type="button" onClick={() => handleSearch}>
+          <button className="btn border_color bg_color_hover" type="button" onClick={() => handleSearch}>
             جستجو
           </button>
         </form>

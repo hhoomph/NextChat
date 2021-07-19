@@ -18,7 +18,7 @@ const AboutPage = () => (
         <small className="text-muted">
           طراحی و پیاده سازی توسط
           <a className="footerColor" href="mailto:hh.oomph@gmail.com">
-            H.H
+          {" "} H.H {" "}
           </a>
         </small>
       </div>

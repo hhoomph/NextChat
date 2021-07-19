@@ -5,8 +5,9 @@ $font_path: "/static/font/";
   font-family: "IranSans";
   src: url("#{$font_path}iransansweb.ttf") format("TrueType");
 }
-$primary: #f9b714;
-$secondary: #ffcd39d1;
+$primary: #4e07d8;
+$secondary: #680579;
+$main_gradient: linear-gradient(90deg, $primary 0%, #6a0499 51%, $secondary 100%);
 $success: #198754;
 $info: #664d03;
 $warning: #ffc107;

@@ -31,7 +31,7 @@ body,
   transform: scale(0.8) translateY(-0.6rem) translateX(1.3rem);
 }
 .form-control:focus {
-  box-shadow: 0 0 0 0.25rem #ffe8a2;
+  box-shadow: 0 0 0 0.1rem #673ab770;
 }
 .navbar {
   z-index: 99;
@@ -87,6 +87,16 @@ body,
   font-size: 0.82rem;
   border-radius: 8px;
 }
+.border_color {
+  border-color: $secondary !important;
+}
+.bg_color {
+  background: $primary;
+}
+.bg_color_hover:hover {
+  background: $secondary;
+  color: #fff;
+}
 .min_h {
   min-height: 66vh;
   max-height: 76vh;
@@ -137,7 +147,7 @@ body,
     width: max-content;
     min-width: 9rem;
     border-radius: 25px;
-    box-shadow: -1px 5px 4px 1px #e0e0e0;
+    box-shadow: 0px 1px 4px 0px #673ab796;
   }
 }
 .user_btn {
@@ -162,11 +172,12 @@ body,
   }
 }
 .user_btn.active {
-  background-color: #f9b714;
+  background: $main_gradient;
+  color: #fff;
 }
 .user_btn:hover {
   background-color: $secondary;
-  color: #000;
+  color: #fff;
 }
 .fade-appear {
   opacity: 0.01;
@@ -243,7 +254,8 @@ body,
     min-width: 55%;
     clear: both;
     .card-header {
-      background: $primary;
+      background: $main_gradient;
+      color: #fff;
     }
   }
   .message_me {
@@ -290,7 +302,7 @@ body,
       height: 56px;
       min-width: 56px;
       min-height: 56px;
-      box-shadow: 0 0 9px 1px #fbc02d;
+      box-shadow: 0 0 9px 1px rgb(153, 153, 153);
       background: #efefef;
       text-align: center;
       border-radius: 50px;
@@ -305,7 +317,7 @@ body,
       &:hover {
         transition: all 0.17s ease;
         background: #ffffff;
-        box-shadow: 0 0 6px 5px #fbc02d;
+        box-shadow: 0 0 6px 5px $primary;
       }
     }
     .emoji_icon {

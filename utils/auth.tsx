@@ -14,7 +14,7 @@ type Props = {
  * @params {jwtToken} extracted from cookies
  * @return {object} object of extracted token
  */
-export function verifyToken(jwtToken: string | any) {
+export function verifyToken(jwtToken: string | any): any {
   try {
     return jwt.verify(jwtToken, SECRET);
   } catch (e) {
