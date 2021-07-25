@@ -28,9 +28,12 @@ const baseUrl =
     : "https://nextchatapp.herokuapp.com:".replace(/^http/, "ws") + port;
 const SECRET = process.env.SECRET || "a92955bcf0e92b1deaea647e706bbc9f";
 const socketOption = {
-  maxHttpBufferSize: 5 * 1024 * 1024,
+  maxHttpBufferSize: 10 * 1024 * 1024,
   allowEIO3: true,
   serveClient: true,
+  allowUpgrades: false,
+  pingInterval: 20000,
+  pingTimeout: 360000,
   cors: {
     origin: baseUrl,
     methods: ["GET", "POST"],
@@ -151,9 +154,9 @@ app
           console.log(e);
         }
       });
-      socket.on("disconnect", async () => {
+      socket.on("disconnect", async (cause) => {
         try {
-          console.log("disconnected :", socket.id);
+          console.log("disconnected :", cause);
           // Delete User From Online Collection
           await OnlineModel.deleteOnline(socket.user?.username);
           socket.removeAllListeners();

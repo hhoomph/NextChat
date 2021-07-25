@@ -1,21 +1,26 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect } from "react";
 import { io as socketIo, Socket } from "socket.io-client";
 import { ReservedOrUserListener } from "socket.io-client/build/typed-events";
 import jsCookie from "js-cookie";
-const SocketIoContext = React.createContext<Socket>({} as Socket);
-type SocketIoProviderProps = React.PropsWithChildren<{}>;
+// type SocketIoProviderProps = React.PropsWithChildren<{}>;
+type SocketIoProviderProps = { children: React.ReactNode };
 const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
-const baseUrl =
-  process.env.NODE_ENV !== "production" ? "http://localhost:".replace(/^http/, "ws") + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
 // const baseUrl = "http://localhost:".replace(/^http/, "ws") + port;
 const initializedSocket = socketIo(baseUrl, {
   withCredentials: true,
   query: token ? { token } : undefined,
-  autoConnect: true,
+  autoConnect: false,
   multiplex: false,
+  transports: ["websocket"],
+  upgrade: false,
+  jsonp: false,
   reconnection: true,
+  reconnectionDelay: 500,
 });
+const SocketIoContext = React.createContext<Socket>({} as Socket);
 export function useSocketIo() {
   return useContext(SocketIoContext);
 }
@@ -42,6 +47,7 @@ export function useSocketManagerListener(event: any, fn: ReservedOrUserListener<
 }
 function SocketIoProvider({ children }: SocketIoProviderProps) {
   useEffect(() => {
+    initializedSocket.connect();
     return () => {
       initializedSocket.disconnect();
     };

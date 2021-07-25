@@ -19,12 +19,13 @@ const contextDefaultValues: UserContextState = {
         username: "",
         createdAt: 0,
       },
-  setCurrentUser: () => {},
+  setCurrentUser: (currentUser) => {currentUser},
 };
 export const UserContext = createContext<UserContextState>(contextDefaultValues);
 type UserProviderProps = {
   children: React.ReactNode;
 };
+// type UserProviderProps = React.PropsWithChildren<{}>;
 export const UserProvider = ({ children }: UserProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User>(contextDefaultValues.currentUser);
   return (

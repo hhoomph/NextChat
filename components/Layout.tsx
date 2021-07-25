@@ -9,16 +9,21 @@ import { logout } from "../utils/auth";
 import { User } from "../types/Types";
 import Search from "./Search";
 import { CSSTransition } from "react-transition-group";
-import { useSocketIo } from "../contexts/SocketIoContext";
+// import { useSocketIo } from "../contexts/SocketIoContext";
+//  import { useSocket } from "../contexts/SocketContext";
+ import {  Socket } from "socket.io-client";
 import { useUser } from "../contexts/UserContext";
+// import jsCookie from "js-cookie";
 // const token = jsCookie.get("token");
-// import Script from "next/script";
+// const port = parseInt(process.env.PORT || "3000", 10);
+// const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
 type Props = {
   children?: ReactNode;
   title?: string;
   user?: User;
+  socket?: Socket;
 };
-const Layout = ({ children, title = "This is the default title", user }: Props) => {
+const Layout = ({ children, title = "Next Chat", user, socket }: Props) => {
   const { currentUser, setCurrentUser } = useUser();
   const userName = currentUser && currentUser.username ? currentUser.username : user?.username !== undefined ? user.username : false;
   const [menu, setMenu] = useState<boolean>(false);
@@ -30,13 +35,44 @@ const Layout = ({ children, title = "This is the default title", user }: Props) 
   const nodeRef = React.useRef(null);
   // const router = useRouter();
   const copyRightDate = new Date().getFullYear();
-  const socket = useSocketIo();
+  // const socket = useSocketIo();
+  // const [socket] = useSocket();
+  // const socket = useContext(SocketContext);
+  // const iniSocket = socketIo(baseUrl, {
+  //   withCredentials: true,
+  //   query: token ? { token } : undefined,
+  //   autoConnect: false,
+  //   multiplex: false,
+  //   transports: ["websocket"],
+  //   upgrade: false,
+  //   jsonp: false,
+  //   reconnection: true,
+  //   reconnectionDelay: 500,
+  // });
+  // const [socket, _] = useState<Socket>(iniSocket);
+  // useEffect(() => {
+  //   socket.open();
+  //   socket.connect();
+  //   socket.io.open();
+  //   socket.io.connect();
+  //   socket.emit("initUser");
+  //   setSocket(socket);
+  //   if (socket.connected) {
+  //     return () => {
+  //       socket.close();
+  //       socket.disconnect();
+  //     };
+  //   }
+  // }, [socket]);
   const handleLogout = React.useCallback(() => {
-    socket.disconnect();
+    if (socket?.connected) {
+      socket?.close();
+      socket?.disconnect();
+    }
     logout();
     setCurrentUser(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, setCurrentUser]);
+  }, []);
   return (
     <div className="container-fluid min-vh-100">
       {/* <Script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></Script> */}

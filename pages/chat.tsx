@@ -6,7 +6,8 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Layout from "../components/Layout";
 import { withAuthSync } from "../utils/auth";
 import { NextPage } from "next";
-import { useSocketIo, useSocketListener, useSocketManagerListener } from "../contexts/SocketIoContext";
+// import { useSocketIo, useSocketListener, useSocketManagerListener } from "../contexts/SocketIoContext";
+// import { useSocket } from "../contexts/SocketContext";
 import { User, MessageType } from "../types/Types";
 import { useReceiver } from "../contexts/ReceiverContext";
 import Image from "next/image";
@@ -16,15 +17,19 @@ import { Picker } from "emoji-mart";
 import "emoji-mart/css/emoji-mart.css";
 import { CSSTransition } from "react-transition-group";
 import fetchData from "../utils/fetchData";
-import jsCookie from "js-cookie";
 import { animateScroll, Element } from "react-scroll";
 import { removeDuplicateObjects } from "../utils/tools";
+import { io as socketIo, Socket } from "socket.io-client";
+import jsCookie from "js-cookie";
 const token = jsCookie.get("token");
+const port = parseInt(process.env.PORT || "3000", 10);
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
 // import { useRouter } from "next/router";
 interface Props {
   user?: User;
 }
 const ChatPage: NextPage<Props> = ({ user }: Props) => {
+  const { receiverUser } = useReceiver();
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState<MessageType[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -40,7 +45,6 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   };
   const showToast = toast ? " show " : " hide";
   const toastRef = React.useRef(null);
-  const { receiverUser } = useReceiver();
   const getUser = async (user: string | undefined): Promise<User | false> => {
     const res = await fetchData(
       `/api/users/get?user=${user}`,
@@ -55,86 +59,148 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
       return false;
     }
   };
-  const socket = useSocketIo();
-  useSocketListener("new_message", async (data: MessageType) => {
-    if (receiverUser.username == null || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
-      const newM = data;
-      let date = newM?.createdAt ? new Date(newM?.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString();
-      newM.createdAt = date;
-      const newUser = await getUser(newM.sender);
-      if (newUser && newUser.username != undefined) {
-        let _allUsers = allUsers;
-        let exist = _allUsers.find((o) => o.username === newUser.username);
-        if (exist && exist.username != undefined) {
-          _allUsers.map((u) => {
-            if (u.username == newUser.username) {
-              u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
-            }
-          });
-        } else {
-          newUser.messageCount = 1;
-          _allUsers = [..._allUsers, newUser];
-        }
-        const users = _allUsers.filter((u: User) => u.username !== user?.username);
-        setAllUsers(users);
-      }
-      setNewMsg(newM);
-      setToast(true);
-    } else {
-      setAllMessage((messages) => [...messages, data]);
-      const newUser = await getUser(data.sender);
-      if (newUser && newUser.username != undefined) {
-        let _allUsers = allUsers;
-        let exist = _allUsers.find((o) => o.username === newUser.username);
-        if (exist && exist.username != undefined) {
-          _allUsers.map((u) => {
-            if (u.username == newUser.username) {
-              u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
-            }
-          });
-        } else {
-          newUser.messageCount = 1;
-          _allUsers = [..._allUsers, newUser];
-        }
-        const users = _allUsers.filter((u: User) => u.username !== user?.username);
-        setAllUsers(users);
-      }
-      animateScroll.scrollToBottom({
-        containerId: "messages_wrapper",
-        // smooth: true,
-        to: "messages_wrapper",
-        delay: 50,
-        smooth: "easeInOutQuint",
-        offset: 150,
-        isDynamic: true,
-      });
-    }
+  const iniSocket = socketIo(baseUrl, {
+    withCredentials: true,
+    query: token ? { token } : undefined,
+    autoConnect: false,
+    multiplex: false,
+    transports: ["websocket"],
+    upgrade: false,
+    jsonp: false,
+    reconnection: true,
+    reconnectionDelay: 500,
   });
-  useSocketManagerListener("reconnect", () => socket.emit("initUser"));
+  const [socket, setSocket] = useState<Socket>(iniSocket);
+  // const socket = useSocketIo();
+  // const [socket] = useSocket();
   useEffect(() => {
-    socket.open();
-    socket.emit("initUser");
-    // if (socket.connected) {
-    //   return () => {
-    //     socket.close();
-    //     socket.disconnect();
-    //   };
-    // }
-  }, []);
-  // useEffect(() => {
-  //   socket.on("new_message", (data) => {
-  //     setAllMessage([...allMessage, data]);
+    if (socket) {
+      socket.open();
+      socket.connect();
+      socket.emit("initUser");
+    }
+    setSocket(socket);
+    if (socket?.connected) {
+      return () => {
+        socket.close();
+        socket.disconnect();
+      };
+    }
+  }, [socket]);
+  // useSocketManagerListener("reconnect", () => socket.emit("initUser"));
+  // useSocketListener("new_message", async (data: MessageType) => {
+  //   if (receiverUser.username == "" || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
+  //     const newM = data;
+  //     let date = newM?.createdAt ? new Date(newM?.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+  //     newM.createdAt = date;
+  //     const newUser = await getUser(newM.sender);
+  //     if (newUser && newUser.username != undefined) {
+  //       let _allUsers = allUsers;
+  //       let exist = _allUsers.find((o) => o.username === newUser.username);
+  //       if (exist && exist.username != undefined) {
+  //         _allUsers.map((u) => {
+  //           if (u.username == newUser.username) {
+  //             u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
+  //           }
+  //         });
+  //       } else {
+  //         newUser.messageCount = 1;
+  //         _allUsers = [..._allUsers, newUser];
+  //       }
+  //       const users = _allUsers.filter((u: User) => u.username !== user?.username);
+  //       setAllUsers(users);
+  //     }
+  //     setNewMsg(newM);
+  //     setToast(true);
+  //   } else {
+  //     setAllMessage((messages) => [...messages, data]);
+  //     const newUser = await getUser(data.sender);
+  //     if (newUser && newUser.username != undefined) {
+  //       let _allUsers = allUsers;
+  //       let exist = _allUsers.find((o) => o.username === newUser.username);
+  //       if (exist && exist.username != undefined) {
+  //         _allUsers.map((u) => {
+  //           if (u.username == newUser.username) {
+  //             u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
+  //           }
+  //         });
+  //       } else {
+  //         newUser.messageCount = 1;
+  //         _allUsers = [..._allUsers, newUser];
+  //       }
+  //       const users = _allUsers.filter((u: User) => u.username !== user?.username);
+  //       setAllUsers(users);
+  //     }
   //     animateScroll.scrollToBottom({
   //       containerId: "messages_wrapper",
+  //       // smooth: true,
   //       to: "messages_wrapper",
+  //       delay: 50,
+  //       smooth: "easeInOutQuint",
   //       offset: 150,
+  //       isDynamic: true,
   //     });
-  //   });
-  //   if (socket)
-  //     return () => {
-  //       socket.off("new_message");
-  //     };
-  // }, []);
+  //   }
+  // });
+  useEffect(() => {
+    socket?.on("new_message", async (data: MessageType) => {
+      if (receiverUser.username == "" || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
+        const newM = data;
+        let date = newM?.createdAt ? new Date(newM?.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+        newM.createdAt = date;
+        const newUser = await getUser(newM.sender);
+        if (newUser && newUser.username != undefined) {
+          let _allUsers = allUsers;
+          let exist = _allUsers.find((o) => o.username === newUser.username);
+          if (exist && exist.username != undefined) {
+            _allUsers.map((u) => {
+              if (u.username == newUser.username) {
+                u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
+              }
+            });
+          } else {
+            newUser.messageCount = 1;
+            _allUsers = [..._allUsers, newUser];
+          }
+          const users = _allUsers.filter((u: User) => u.username !== user?.username);
+          setAllUsers(users);
+        }
+        setNewMsg(newM);
+        setToast(true);
+      } else {
+        setAllMessage((messages) => [...messages, data]);
+        const newUser = await getUser(data.sender);
+        if (newUser && newUser.username != undefined) {
+          let _allUsers = allUsers;
+          let exist = _allUsers.find((o) => o.username === newUser.username);
+          if (exist && exist.username != undefined) {
+            _allUsers.map((u) => {
+              if (u.username == newUser.username) {
+                u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
+              }
+            });
+          } else {
+            newUser.messageCount = 1;
+            _allUsers = [..._allUsers, newUser];
+          }
+          const users = _allUsers.filter((u: User) => u.username !== user?.username);
+          setAllUsers(users);
+        }
+        animateScroll.scrollToBottom({
+          containerId: "messages_wrapper",
+          // smooth: true,
+          to: "messages_wrapper",
+          delay: 50,
+          smooth: "easeInOutQuint",
+          offset: 150,
+          isDynamic: true,
+        });
+      }
+    });
+    return () => {
+      socket?.off("new_message");
+    };
+  }, [socket, receiverUser]);
   useEffect(() => {
     const getMessages = async () => {
       const response = await fetchData(
@@ -164,7 +230,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   const showMessages = useMemo(
     () =>
       allMessage?.map((msg) => {
-        return <Message key={msg._id} user={user} message={msg} />;
+        return <Message key={msg._id} user={user} message={msg} socket={socket} />;
       }),
     [allMessage, user]
   );
@@ -188,13 +254,13 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
     );
   }, [showEmojiPicker]);
   const sendMessage = useCallback(() => {
-    if (message != "" && receiverUser.username) {
+    if (message != "" && receiverUser?.username != undefined) {
       const data: MessageType = {
         sender: user?.username,
         receiver: receiverUser.username,
         content: message,
       };
-      socket.emit("chat_message", data);
+      socket?.emit("chat_message", data);
       setMessage("");
       // setAllMessage([...allMessage, data]);
     }
@@ -227,7 +293,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   const showUsers = useMemo(
     () =>
       allUsers?.map((usr) => {
-        return <UserButton key={usr._id} user={usr} newMsg={newMsg} toggleNeMsg={toggleNeMsg} />;
+        return <UserButton key={usr._id} user={usr} newMsg={newMsg} toggleNeMsg={toggleNeMsg} socket={socket} />;
       }),
     [allUsers, newMsg, socket]
   );
@@ -260,7 +326,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
   return (
-    <Layout title="چت" user={user}>
+    <Layout title="چت" user={user} socket={socket}>
       <div className="container-fluid chat_wrapper">
         <div className="row mt-4 g-4">
           {receiverUser.username && (
@@ -382,16 +448,9 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
 export default withAuthSync(ChatPage);
 // export const getServerSideProps: GetServerSideProps = async (context) => {
 //   const { token } = nextCookies(context);
-//   const messages = await fetchData(
-//     "/api/message/message",
-//     {
-//       method: "POST",
-//       body: JSON.stringify({
-//         username: user?.username,
-//         receiver: receiverUser,
-//       }),
+//   return {
+//     props: {
+//       token: token,
 //     },
-//     token
-//   );
-//   return { messages };
+//   };
 // };

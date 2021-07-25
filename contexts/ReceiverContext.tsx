@@ -39,12 +39,14 @@ const contextDefaultValues: ReceiveContextState = {
     username: "",
     createdAt: 0,
   },
-  setReceiverUser: () => {},
+  setReceiverUser: (contextDefaultValues) => {contextDefaultValues},
 };
 export const ReceiverContext = createContext<ReceiveContextState>(contextDefaultValues);
 type ReceiverProviderProps = {
   children: React.ReactNode;
 };
+// type ReceiverProviderProps = React.PropsWithChildren<{}>;
+export const useReceiver = () => useContext<ReceiveContextState>(ReceiverContext);
 export const ReceiverProvider = ({ children }: ReceiverProviderProps) => {
   const [receiverUser, setReceiverUser] = useState<User>(contextDefaultValues.receiverUser);
   return (
@@ -58,4 +60,3 @@ export const ReceiverProvider = ({ children }: ReceiverProviderProps) => {
     </ReceiverContext.Provider>
   );
 };
-export const useReceiver = () => useContext<ReceiveContextState>(ReceiverContext);
