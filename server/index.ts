@@ -82,9 +82,12 @@ app
       }
     });
     io.on("connection", async (socket: ISocket) => {
-      connectedPeers.push(socket.id.toString());
+      connectedPeers.push(socket.id);
       io.emit("connected", socket.user);
       socket.on("initUser", async () => {
+        connectedPeers.push(socket.id);
+        let uniqPeers = connectedPeers.filter((value, index) => connectedPeers.indexOf(value) === index);
+        connectedPeers = uniqPeers;
         // const userId = new ObjectID(socket.user?._id);
         const newId = socket.id.toString();
         try {
@@ -154,6 +157,46 @@ app
           console.log(e);
         }
       });
+      socket.on("pre-offer", async (data) => {
+        connectedPeers.push(socket.id);
+        let uniqPeers = connectedPeers.filter((value, index) => connectedPeers.indexOf(value) === index);
+        connectedPeers = uniqPeers;
+        const { caleePersonalCode, callType } = data;
+        const connectedPeer = connectedPeers.find((peerSocketId) => {
+          return peerSocketId === caleePersonalCode;
+        });
+        if (connectedPeer) {
+          const data2 = {
+            callerSocketId: socket.id,
+            callType: callType,
+            user: socket.user,
+          };
+          io.sockets.to(caleePersonalCode).emit("pre-offer", data2);
+          // socket.to(caleePersonalCode).emit("pre-offer", data2);
+        } else {
+          const data2 = {
+            preOfferAnswer: "CALEE_NOT_FOUND",
+          };
+          io.sockets.to(socket.id).emit("pre-offer-answer", data2);
+        }
+      });
+      socket.on("pre-offer-answer", async (data) => {
+        const connectedPeer = connectedPeers.find((peerSocketId) => {
+          return peerSocketId === data.callerSocketId;
+        });
+        if (connectedPeer) {
+          io.sockets.to(data.callerSocketId).emit("pre-offer-answer", data);
+        }
+      });
+      socket.on("webRTC-signaling", (data) => {
+        const { connectedUserSocketId } = data;
+        const connectedPeer = connectedPeers.find((peerSocketId) => {
+          return peerSocketId === connectedUserSocketId;
+        });
+        if (connectedPeer) {
+          io.to(connectedUserSocketId).emit("webRTC-signaling", data);
+        }
+      });
       socket.on("disconnect", async (cause) => {
         try {
           console.log("disconnected :", cause);
@@ -161,7 +204,7 @@ app
           await OnlineModel.deleteOnline(socket.user?.username);
           socket.removeAllListeners();
           const newConnectedPeers = connectedPeers.filter((peerSocketId) => {
-            peerSocketId !== socket.id;
+            return peerSocketId !== socket.id;
           });
           connectedPeers = newConnectedPeers;
           io.socketsLeave(socket.id);

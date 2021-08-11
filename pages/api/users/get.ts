@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import connectDB from "../../../database/mongo";
 import { removeDuplicateObjects } from "../../../utils/tools";
 const KEY = process.env.SECRET;
-const Search = async (req: NextApiRequest, res: NextApiResponse) => {
+const Get = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
   await connectDB();
   switch (method) {
@@ -73,4 +73,4 @@ const Search = async (req: NextApiRequest, res: NextApiResponse) => {
       break;
   }
 };
-export default Search;
+export default Get;

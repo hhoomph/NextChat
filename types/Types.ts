@@ -21,3 +21,39 @@ export type OnlineType = {
   username: string;
   socketId: string;
 };
+// WebRTC Types
+export interface ConnectedUserDetail {
+  socketId: string | undefined;
+  callType: String | undefined;
+}
+type FacingMode = { exact: string };
+type Video = {
+  facingMode: string | FacingMode;
+};
+type Size = {
+  width: number;
+  height: number;
+};
+type FrameRate = {
+  max?: number;
+  min?: number;
+};
+type Width = {
+  min?: number;
+  ideal?: number;
+  max?: number;
+};
+type Height = {
+  min?: number;
+  ideal?: number;
+  max?: number;
+};
+export type Constraints = {
+  audio: boolean;
+  video: Video | boolean | Size;
+  frameRate?: FrameRate;
+  aspectRatio?: number;
+  width?: Width;
+  height?: Height;
+  echoCancellation?: boolean;
+};

@@ -77,9 +77,13 @@ const UserButton: FC<Props> = ({ user = defaultUser, newMsg, toggleNeMsg, socket
     socket?.on("disconnected", () => {
       checkOnline();
     });
-  }, [checkOnline, socket, user]);
-  useEffect(() => {
     socket?.on("connected", () => {
+      checkOnline();
+    });
+    socket?.on("disconnect", () => {
+      checkOnline();
+    });
+    socket?.on("connect", () => {
       checkOnline();
     });
   }, [checkOnline, socket, user]);

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import OnlineModel from "../../../model/online";
 import connectDB from "../../../database/mongo";
-const login = async (req: NextApiRequest, res: NextApiResponse) => {
+const Online = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
   await connectDB();
   switch (method) {
@@ -30,4 +30,4 @@ const login = async (req: NextApiRequest, res: NextApiResponse) => {
       break;
   }
 };
-export default login;
+export default Online;

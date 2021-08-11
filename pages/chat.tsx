@@ -1,18 +1,19 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-// import { GetServerSideProps } from "next";
-// import nextCookies from "next-cookies";
+import { GetServerSideProps } from "next";
+import nextCookies from "next-cookies";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 // import Link from "next/link";
 import Layout from "../components/Layout";
-import { withAuthSync } from "../utils/auth";
-import { NextPage } from "next";
+import { withAuthSync, withAuthServerSideProps } from "../utils/auth";
+import { NextPage, GetServerSidePropsContext } from "next";
 // import { useSocketIo, useSocketListener, useSocketManagerListener } from "../contexts/SocketIoContext";
 // import { useSocket } from "../contexts/SocketContext";
-import { User, MessageType } from "../types/Types";
+import { User, MessageType, ConnectedUserDetail } from "../types/Types";
 import { useReceiver } from "../contexts/ReceiverContext";
 import Image from "next/image";
 import UserButton from "../components/UserButton";
 import Message from "../components/Message";
+import Video from "../components/Video";
 import { Picker } from "emoji-mart";
 import "emoji-mart/css/emoji-mart.css";
 import { CSSTransition } from "react-transition-group";
@@ -20,16 +21,18 @@ import fetchData from "../utils/fetchData";
 import { animateScroll, Element } from "react-scroll";
 import { removeDuplicateObjects } from "../utils/tools";
 import { io as socketIo, Socket } from "socket.io-client";
-import jsCookie from "js-cookie";
-const token = jsCookie.get("token");
+// import jsCookie from "js-cookie";
+// const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
 const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
 // import { useRouter } from "next/router";
 interface Props {
   user?: User;
+  props?: any;
 }
-const ChatPage: NextPage<Props> = ({ user }: Props) => {
-  const { receiverUser } = useReceiver();
+const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
+  const { token } = props;
+  const { receiverUser, setReceiverUser } = useReceiver();
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState<MessageType[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -59,6 +62,30 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
       return false;
     }
   };
+  const getReceiverUserId = async (): Promise<void> => {
+    const res = await fetchData(
+      `/api/users/getId`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          username: receiverUser.username,
+        }),
+      },
+      token
+    );
+    const user = res && res.user ? res.user : false;
+    if (user) {
+      const newUsr = receiverUser;
+      newUsr.ID = user.socketId;
+      setReceiverUser(newUsr);
+      return user.socketId;
+    } else {
+      return undefined;
+    }
+  };
+  useEffect(() => {
+    getReceiverUserId();
+  }, [receiverUser]);
   const iniSocket = socketIo(baseUrl, {
     withCredentials: true,
     query: token ? { token } : undefined,
@@ -80,8 +107,26 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
       socket.emit("initUser");
     }
     setSocket(socket);
+    socket.io.on("reconnect", () => {
+      socket.emit("initUser");
+    });
+    socket.on("connect_error", () => {
+      setTimeout(() => {
+        socket.connect();
+      }, 1000);
+    });
+    socket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        // the disconnection was initiated by the server, you need to reconnect manually
+        socket.connect();
+      }
+      // else the socket will automatically try to reconnect
+    });
     if (socket?.connected) {
       return () => {
+        socket.io.off("reconnect");
+        socket.off("connect_error");
+        socket.off("disconnect");
         socket.close();
         socket.disconnect();
       };
@@ -197,8 +242,16 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
         });
       }
     });
+    socket.on("pre-offer", (data: any) => {
+      webRTCHandlerPreOffer(data);
+    });
+    socket.on("pre-offer-answer", (data: any) => {
+      webRTCHandlerPreOfferAnswer(data);
+    });
     return () => {
       socket?.off("new_message");
+      socket?.off("pre-offer");
+      socket?.off("pre-offer-answer");
     };
   }, [socket, receiverUser]);
   useEffect(() => {
@@ -245,7 +298,7 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   };
   const showEmoji = useMemo(() => {
     return (
-      <div className="emoji_icon">
+      <div className="emoji_icon" onBlurCapture={toggleEmojiPicker}>
         <a className="" title="emoji" onClick={toggleEmojiPicker}>
           <Image src="/icons/lol.svg" alt="Emoji Icon" width={30} height={30} />
         </a>
@@ -325,13 +378,119 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   };
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
+  const [connectedUserDetail, setConnectedUserDetail] = useState<ConnectedUserDetail>({ socketId: "", callType: "" });
+  const [preOfferAnswer, setPreOfferAnswer] = useState<string>("");
+  const webRTCHandlerSendPreOffer = (callType: string) => {
+    setEnterModal(false);
+    setInOrOutCall("OutcomingCall");
+    setPreOfferAnswer("");
+    getReceiverUserId();
+    setConnectedUserDetail({
+      socketId: receiverUser.ID,
+      callType: callType,
+    });
+    if (callType === "VIDEO_PERSONAL_CODE" || callType === "AUDIO_PERSONAL_CODE") {
+      const data = {
+        callType: callType,
+        caleePersonalCode: receiverUser.ID,
+      };
+      socket.emit("pre-offer", data);
+      setEnterModal(true);
+    }
+  };
+  const [enterModal, setEnterModal] = useState<boolean>(false);
+  const [inOrOutCall, setInOrOutCall] = useState<string>("");
+  const [callerUserName, setCallerUserName] = useState<string>("");
+  const webRTCHandlerPreOffer = (data: any) => {
+    setPreOfferAnswer("");
+    const { callType, callerSocketId, user } = data;
+    setConnectedUserDetail({
+      socketId: callerSocketId,
+      callType: callType,
+    });
+    setEnterModal(false);
+    if (callType === "VIDEO_PERSONAL_CODE" || callType === "AUDIO_PERSONAL_CODE") {
+      if (socket.id === callerSocketId) {
+        setInOrOutCall("OutcomingCall");
+      } else {
+        // setReceiverUser(user);
+        setCallerUserName(user.username);
+        setInOrOutCall("IncomingCall");
+      }
+      setEnterModal(true);
+    }
+  };
+  const webRTCPreOfferAnswer = (preOfferAnswer: any) => {
+    const data = {
+      callerSocketId: connectedUserDetail.socketId,
+      preOfferAnswer: preOfferAnswer,
+    };
+    socket.emit("pre-offer-answer", data);
+  };
+  const acceptCallHandler = () => {
+    webRTCPreOfferAnswer("CALL_ACCEPTED");
+  };
+  const rejectCallHandler = () => {
+    webRTCPreOfferAnswer("CALL_REJECTED");
+  };
+  const webRTCHandlerPreOfferAnswer = (data: any) => {
+    const { preOfferAnswer } = data;
+    // if (socket.id === data.callerSocketId) {
+    // } else {
+    //   // setEnterModal(false);
+    // }
+    if (preOfferAnswer === "CALEE_NOT_FOUND") {
+      setPreOfferAnswer("کاربر مورد نظر در دسترس نیست.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALEE_IS_ON_ANOTHER_CALL") {
+      setPreOfferAnswer("مخاطب در حال مکالمه است.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALL_REJECTED") {
+      setPreOfferAnswer("تماس شما توسط مخاطب لغو شد.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALL_ACCEPTED") {
+      setPreOfferAnswer("CALL_ACCEPTED");
+    }
+  };
+  // socket.on("pre-offer", (data: any) => {
+  //   webRTCHandlerPreOffer(data);
+  // });
   return (
     <Layout title="چت" user={user} socket={socket}>
+      <Video
+        socket={socket}
+        user={user}
+        enterModal={enterModal}
+        setEnterModal={setEnterModal}
+        inOrOutCall={inOrOutCall}
+        callerUserName={callerUserName}
+        acceptCallHandler={acceptCallHandler}
+        rejectCallHandler={rejectCallHandler}
+        preOfferAnswer={preOfferAnswer}
+        connectedUserDetail={connectedUserDetail}
+      />
       <div className="container-fluid chat_wrapper">
-        <div className="row mt-4 g-4">
+        <div className="row mt-5 g-4">
           {receiverUser.username && (
             <div className="col-12 text-center receiver_username">
               <h4>{receiverUser.username}</h4>
+              <div className="video_call_wrapper">
+                <div className="video_call_btn" onClick={() => webRTCHandlerSendPreOffer("VIDEO_PERSONAL_CODE")}>
+                  <Image src="/icons/video-call-fill.svg" alt="Mic" width={28} height={28} />
+                </div>
+                <div className="audio_call_btn" onClick={() => webRTCHandlerSendPreOffer("AUDIO_PERSONAL_CODE")}>
+                  <Image src="/icons/telephone-outbound-fill.svg" alt="Mic" width={25} height={25} />
+                </div>
+              </div>
             </div>
           )}
           <div className="col-4 col-md-4 col-lg-3 border-start border_color min_h justify-content-center pt-2 users">{showUsers}</div>
@@ -341,10 +500,10 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
                 <div className="dot_menu_wrapper">
                   <Image
                     src="/icons/three-dots.svg"
-                    alt="پاک کردن تاریخچه پیام ها"
+                    alt="Menu"
                     width={30}
                     height={30}
-                    className="btn btn-outline-warning btn-sm dropdown-toggle"
+                    className="btn btn-sm dropdown-toggle"
                     data-bs-toggle="dropdownMenuButton2"
                     aria-expanded="false"
                     onClick={toggleMenu}
@@ -418,10 +577,12 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
                   <label htmlFor="message_input" className="form-label">
                     پیامت رو اینجا بنویس
                   </label>
-                  <a className="send_btn" title="ارسال" onClick={sendMessage}>
-                    <Image src="/icons/send.svg" alt="Send Button" width={40} height={40} />
-                  </a>
-                  {showEmoji}
+                  <div className="message_buttons">
+                    <a className="send_btn" title="ارسال" onClick={sendMessage}>
+                      <Image src="/icons/send.svg" alt="Send Button" width={35} height={35} />
+                    </a>
+                    {showEmoji}
+                  </div>
                 </div>
               </form>
             </div>
@@ -446,11 +607,8 @@ const ChatPage: NextPage<Props> = ({ user }: Props) => {
   );
 };
 export default withAuthSync(ChatPage);
-// export const getServerSideProps: GetServerSideProps = async (context) => {
-//   const { token } = nextCookies(context);
-//   return {
-//     props: {
-//       token: token,
-//     },
-//   };
-// };
+export const getServerSideProps: GetServerSideProps = withAuthServerSideProps(async (ctx: GetServerSidePropsContext, user) => {
+  const { token } = nextCookies(ctx);
+  const props = { user: user, token: token };
+  return { props: { props } };
+});

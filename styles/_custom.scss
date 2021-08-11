@@ -8,7 +8,10 @@ $font_path: "/static/font/";
 $primary: #4e07d8;
 $secondary: #680579;
 $main_gradient: linear-gradient(90deg, $primary 0%, #6a0499 51%, $secondary 100%);
+$primary_gradient: linear-gradient(90deg, $secondary 0%, #6a0499 51%, $primary 100%);
 $info_gradient: linear-gradient(90deg, #525252 0%, #3a3a3a 51%, #2f2f2f 100%);
+$dark_gradient: linear-gradient(90deg, #4c4c4c 0%, #353535 51%, #424242 100%);
+$light_gradient: linear-gradient(90deg, #f5f5f5 0%, #c1c1c1 51%, #f9f9f9 100%);
 $success: #198754;
 $info: #664d03;
 $warning: #ffc107;
@@ -29,5 +32,47 @@ $theme-colors: (
 @keyframes spinner {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0% {
+    background-color: $primary;
+  }
+  100% {
+    background-color: $danger;
+  }
+}
+@keyframes heartbeat {
+  from {
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    -webkit-transform-origin: center center;
+    transform-origin: center center;
+    -webkit-animation-timing-function: ease-out;
+    animation-timing-function: ease-out;
+  }
+  10% {
+    -webkit-transform: scale(0.91);
+    transform: scale(0.91);
+    -webkit-animation-timing-function: ease-in;
+    animation-timing-function: ease-in;
+  }
+  17% {
+    -webkit-transform: scale(0.98);
+    transform: scale(0.98);
+    -webkit-animation-timing-function: ease-out;
+    animation-timing-function: ease-out;
+  }
+  33% {
+    -webkit-transform: scale(0.87);
+    transform: scale(0.87);
+    -webkit-animation-timing-function: ease-in;
+    animation-timing-function: ease-in;
+  }
+  45% {
+    -webkit-transform: scale(1);
+    transform: scale(1);
+    -webkit-animation-timing-function: ease-out;
+    animation-timing-function: ease-out;
   }
 }
