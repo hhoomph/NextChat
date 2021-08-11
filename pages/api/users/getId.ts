@@ -2,8 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import OnlineModel from "../../../model/online";
 import jwt from "jsonwebtoken";
 import connectDB from "../../../database/mongo";
-import { removeDuplicateObjects } from "../../../utils/tools";
-import Online from "./online";
+// import { removeDuplicateObjects } from "../../../utils/tools";
+// import Online from "./online";
 const KEY = process.env.SECRET;
 const GetId = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req;
