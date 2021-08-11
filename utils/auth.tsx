@@ -1,5 +1,6 @@
 import React, { useEffect, ReactNode } from "react";
-import { NextPage, NextPageContext } from "next";
+// import { NextPage, NextPageContext } from "next";
+import { NextPage } from "next";
 import jsCookie from "js-cookie";
 import Router from "next/router";
 import nextCookies from "next-cookies";
@@ -8,9 +9,9 @@ import { User } from "../types/Types";
 import { GetServerSidePropsContext, GetServerSidePropsResult } from "next";
 type IncomingGSSP<P> = (ctx: GetServerSidePropsContext, user: User) => Promise<P>;
 type WithAuthServerSidePropsResult = GetServerSidePropsResult<{ [key: string]: any }>;
-type WithAuthServerSidePropsOptions = {
-  // any options you eventually would like to pass (required role...)
-};
+// type WithAuthServerSidePropsOptions = {
+//   // any options you eventually would like to pass (required role...)
+// };
 const SECRET = process.env.SECRET;
 type Props = {
   children?: ReactNode;
@@ -90,7 +91,8 @@ export const withAuthSync = (WrappedComponent: NextPage): NextPage => {
   // };
   return Wrapper;
 };
-export function withAuthServerSideProps(incomingGSSP?: IncomingGSSP<WithAuthServerSidePropsResult> | null, options?: WithAuthServerSidePropsOptions) {
+// export function withAuthServerSideProps(incomingGSSP?: IncomingGSSP<WithAuthServerSidePropsResult> | null, options?: WithAuthServerSidePropsOptions) {
+export function withAuthServerSideProps(incomingGSSP?: IncomingGSSP<WithAuthServerSidePropsResult> | null) {
   return async (ctx: GetServerSidePropsContext): Promise<WithAuthServerSidePropsResult> => {
     const token = auth(ctx);
     const profile = token ? verifyToken(token.toString()) : false;
