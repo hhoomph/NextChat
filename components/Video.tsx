@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useRef, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 import Image from "next/image";
-import jsCookie from "js-cookie";
+// import jsCookie from "js-cookie";
 import { User, Constraints, ConnectedUserDetail } from "../types/Types";
 import { Socket } from "socket.io-client";
 import { useReceiver } from "./../contexts/ReceiverContext";
@@ -20,7 +21,6 @@ type Props = {
 };
 const Video = ({
   socket,
-  user,
   enterModal,
   setEnterModal,
   inOrOutCall,
@@ -30,11 +30,19 @@ const Video = ({
   preOfferAnswer,
   connectedUserDetail,
 }: Props) => {
-  const token = jsCookie.get("token");
-  const username = user?.username;
+  // const token = jsCookie.get("token");
+  // const username = user?.username;
   const { receiverUser } = useReceiver();
   // const [constraints, setConstraints] = useState<Constraints>({ audio: true, video: true });
-  const [constraints, setConstraints] = useState<Constraints>({
+  // const [constraints, setConstraints] = useState<Constraints>({
+  //   audio: true,
+  //   video: true,
+  //   aspectRatio: 1.7777777778,
+  //   echoCancellation: true,
+  //   width: { min: 640, max: 640 },
+  //   height: { min: 480, max: 480 },
+  // });
+  const [constraints] = useState<Constraints>({
     audio: true,
     video: true,
     aspectRatio: 1.7777777778,
@@ -44,9 +52,9 @@ const Video = ({
   });
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [screenSharingStream, setScreenSharingStream] = useState<MediaStream | null>(null);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [screenShareActive, setScreenShareActive] = useState<boolean>(false);
+  // const [screenSharingStream, setScreenSharingStream] = useState<MediaStream | null>(null);
+  // const [isMuted, setIsMuted] = useState<boolean>(false);
+  // const [screenShareActive, setScreenShareActive] = useState<boolean>(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   //  Peer Connection
@@ -71,7 +79,7 @@ const Video = ({
       };
       peerConnection.onconnectionstatechange = (event) => {
         if (peerConnection.connectionState === "connected") {
-          console.log("successfuly connected with other peer");
+          console.log("successfully connected with other peer", event);
         }
       };
       // Receiving Track
@@ -104,11 +112,11 @@ const Video = ({
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
   // Entering Modal
-  const toggleEnterModal = () => {
-    setEnterModal(!enterModal);
-  };
+  // const toggleEnterModal = () => {
+  //   setEnterModal(!enterModal);
+  // };
   const showEnterModal = enterModal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
-  const enterModalRef = React.useRef(null);
+  // const enterModalRef = React.useRef(null);
   const [videoBtn, setVideoBtn] = useState<boolean>(false);
   const minimizeVideo = () => {
     setModal(false);
@@ -119,9 +127,9 @@ const Video = ({
     setModal(true);
   };
   const [placeholder, setPlaceholder] = useState<boolean>(true);
-  const togglePlaceholder = () => {
-    setPlaceholder(!placeholder);
-  };
+  // const togglePlaceholder = () => {
+  //   setPlaceholder(!placeholder);
+  // };
   const getLocalPrevie = () => {
     setPlaceholder(false);
     navigator.mediaDevices
@@ -247,10 +255,11 @@ const Video = ({
     setModal(false);
     rejectCallHandler();
   };
-  const [recording, setRecording] = useState<boolean>(true);
-  const toggleRecording = () => {
-    setRecording(!recording);
-  };
+  const [recording] = useState<boolean>(true);
+  // const [recording, setRecording] = useState<boolean>(true);
+  // const toggleRecording = () => {
+  //   setRecording(!recording);
+  // };
   return (
     <CSSTransition timeout={300} appear={true} classNames="fade" in={modal} nodeRef={modalRef}>
       <>
