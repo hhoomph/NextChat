@@ -31,11 +31,11 @@ interface Props {
   props?: any;
 }
 const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
-  const { token } = props;
+  const { token, users } = props;
   const { receiverUser, setReceiverUser } = useReceiver();
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState<MessageType[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>(users);
   const [newMsg, setNewMsg] = useState<MessageType | null>(null);
   const toggleNeMsg = () => {
     setNewMsg(null);
@@ -48,6 +48,25 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   };
   const showToast = toast ? " show " : " hide";
   const toastRef = React.useRef(null);
+  const getAllUsers = async () => {
+    const res = await fetchData(
+      "/api/users/get",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          username: user?.username,
+        }),
+      },
+      token
+    );
+    if (res && res.users) {
+      const users = res.users.filter((u: User) => u.username !== user?.username);
+      setAllUsers(users);
+    }
+  };
+  useEffect(() => {
+    getAllUsers();
+  }, [allMessage, receiverUser]);
   const getUser = async (user: string | undefined): Promise<User | false> => {
     const res = await fetchData(
       `/api/users/get?user=${user}`,
@@ -62,6 +81,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       return false;
     }
   };
+  const [inOrOutCall, setInOrOutCall] = useState<string>("");
   const getReceiverUserId = async (): Promise<void> => {
     const res = await fetchData(
       `/api/users/getId`,
@@ -85,7 +105,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   };
   useEffect(() => {
     getReceiverUserId();
-  }, [receiverUser]);
+  }, [receiverUser, inOrOutCall]);
   const iniSocket = socketIo(baseUrl, {
     withCredentials: true,
     query: token ? { token } : undefined,
@@ -132,61 +152,6 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       };
     }
   }, [socket]);
-  // useSocketManagerListener("reconnect", () => socket.emit("initUser"));
-  // useSocketListener("new_message", async (data: MessageType) => {
-  //   if (receiverUser.username == "" || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
-  //     const newM = data;
-  //     let date = newM?.createdAt ? new Date(newM?.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString();
-  //     newM.createdAt = date;
-  //     const newUser = await getUser(newM.sender);
-  //     if (newUser && newUser.username != undefined) {
-  //       let _allUsers = allUsers;
-  //       let exist = _allUsers.find((o) => o.username === newUser.username);
-  //       if (exist && exist.username != undefined) {
-  //         _allUsers.map((u) => {
-  //           if (u.username == newUser.username) {
-  //             u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
-  //           }
-  //         });
-  //       } else {
-  //         newUser.messageCount = 1;
-  //         _allUsers = [..._allUsers, newUser];
-  //       }
-  //       const users = _allUsers.filter((u: User) => u.username !== user?.username);
-  //       setAllUsers(users);
-  //     }
-  //     setNewMsg(newM);
-  //     setToast(true);
-  //   } else {
-  //     setAllMessage((messages) => [...messages, data]);
-  //     const newUser = await getUser(data.sender);
-  //     if (newUser && newUser.username != undefined) {
-  //       let _allUsers = allUsers;
-  //       let exist = _allUsers.find((o) => o.username === newUser.username);
-  //       if (exist && exist.username != undefined) {
-  //         _allUsers.map((u) => {
-  //           if (u.username == newUser.username) {
-  //             u.messageCount = u.messageCount ? u.messageCount + 1 : 1;
-  //           }
-  //         });
-  //       } else {
-  //         newUser.messageCount = 1;
-  //         _allUsers = [..._allUsers, newUser];
-  //       }
-  //       const users = _allUsers.filter((u: User) => u.username !== user?.username);
-  //       setAllUsers(users);
-  //     }
-  //     animateScroll.scrollToBottom({
-  //       containerId: "messages_wrapper",
-  //       // smooth: true,
-  //       to: "messages_wrapper",
-  //       delay: 50,
-  //       smooth: "easeInOutQuint",
-  //       offset: 150,
-  //       isDynamic: true,
-  //     });
-  //   }
-  // });
   useEffect(() => {
     socket?.on("new_message", async (data: MessageType) => {
       if (receiverUser.username == "" || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
@@ -217,6 +182,11 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         const newUser = await getUser(data.sender);
         if (newUser && newUser.username != undefined) {
           let _allUsers = allUsers;
+          let exist2 = _allUsers.find((o) => o.username === receiverUser.username);
+          if (exist2 && exist2.username != undefined) {
+          } else {
+            _allUsers = [..._allUsers, receiverUser];
+          }
           let exist = _allUsers.find((o) => o.username === newUser.username);
           if (exist && exist.username != undefined) {
             _allUsers.map((u) => {
@@ -324,31 +294,12 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       sendMessage();
     }
   };
-  useEffect(() => {
-    const getAllUsers = async () => {
-      const res = await fetchData(
-        "/api/users/get",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            username: user?.username,
-          }),
-        },
-        token
-      );
-      if (res && res.users) {
-        const users = res.users.filter((u: User) => u.username !== user?.username);
-        setAllUsers(users);
-      }
-    };
-    getAllUsers();
-  }, [socket]);
   const showUsers = useMemo(
     () =>
       allUsers?.map((usr) => {
         return <UserButton key={usr._id} user={usr} newMsg={newMsg} toggleNeMsg={toggleNeMsg} socket={socket} />;
       }),
-    [allUsers, newMsg, socket]
+    [allUsers, newMsg, socket, allMessage]
   );
   const deleteMessages = async () => {
     await fetchData(
@@ -380,11 +331,11 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   const modalRef = React.useRef(null);
   const [connectedUserDetail, setConnectedUserDetail] = useState<ConnectedUserDetail>({ socketId: "", callType: "" });
   const [preOfferAnswer, setPreOfferAnswer] = useState<string>("");
-  const webRTCHandlerSendPreOffer = (callType: string) => {
+  const webRTCHandlerSendPreOffer = async (callType: string) => {
     setEnterModal(false);
     setInOrOutCall("OutcomingCall");
     setPreOfferAnswer("");
-    getReceiverUserId();
+    await getReceiverUserId();
     setConnectedUserDetail({
       socketId: receiverUser.ID,
       callType: callType,
@@ -399,7 +350,6 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     }
   };
   const [enterModal, setEnterModal] = useState<boolean>(false);
-  const [inOrOutCall, setInOrOutCall] = useState<string>("");
   const [callerUserName, setCallerUserName] = useState<string>("");
   const webRTCHandlerPreOffer = (data: any) => {
     setPreOfferAnswer("");
@@ -609,6 +559,17 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
 export default withAuthSync(ChatPage);
 export const getServerSideProps: GetServerSideProps = withAuthServerSideProps(async (ctx: GetServerSidePropsContext, user) => {
   const { token } = nextCookies(ctx);
-  const props = { user: user, token: token };
+  const res = await fetchData(
+    "/api/users/get",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        username: user?.username,
+      }),
+    },
+    token
+  );
+  const u = res && res.users ? res.users.filter((u: User) => u.username !== user?.username) : [];
+  const props = { user: user, token: token, users: u };
   return { props: { props } };
 });

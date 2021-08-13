@@ -59,12 +59,19 @@ const Video = ({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   //  Peer Connection
   const peerConfiguration: RTCConfiguration = {
-    iceServers: [{ urls: "stun:stun.1.google.com:13902" }, { urls: "stun:stun2.l.google.com:19302" }],
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.1.google.com:13902" }],
   };
   const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
   const creatPeerConnection = () => {
-    const peerCon = new RTCPeerConnection(peerConfiguration);
-    setPeerConnection(peerCon);
+    // const sUsrAg = navigator.userAgent;
+    // const isFirefox = sUsrAg.indexOf("Firefox") > -1 ? true : false;
+    //compatibility for firefox and chrome
+    // window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+    // window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+    // window.RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
+    // window.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+    const pc = new RTCPeerConnection(peerConfiguration);
+    setPeerConnection(pc);
     if (peerConnection) {
       peerConnection.onicecandidate = (event) => {
         console.log("getting ice candidates from stun server");
@@ -87,6 +94,7 @@ const Video = ({
       setRemoteStream(remoteStreamFromPeer);
       peerConnection.ontrack = (event) => {
         remoteStream?.addTrack(event.track);
+        // setRemoteStream(event.streams[0]);
       };
       let remoteVideo = remoteVideoRef.current;
       if (remoteVideo) {

@@ -50,14 +50,19 @@ const Message: FC<Props> = ({ user = defaultUser, message, socket }: Props) => {
     if (currentUser.username == message.receiver) {
       socket?.emit("read_message", message);
     }
-  }, []);
+  }, [socket, message]);
   useEffect(() => {
     socket?.on("message_readed", (res: MessageType) => {
       if (res._id == message._id) {
         setRead(true);
       }
     });
-  }, []);
+    if (socket?.connected) {
+      return () => {
+        socket.off("message_readed");
+      };
+    }
+  }, [socket, message]);
   // useSocketListener("message_readed", (res: MessageType) => {
   //   if (res._id == message._id) {
   //     setRead(true);

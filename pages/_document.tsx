@@ -22,7 +22,7 @@ class MyDocument extends Document {
           <meta name="msapplication-tap-highlight" content="no" />
           <meta name="theme-color" content="#fff" />
           <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/android-chrome-192x192.png" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/icons/android-chrome-192x192.png" />
           <link rel="manifest" href="/manifest.json" />
           <link rel="mask-icon" href="/static/icons/home.svg" color="#5bbad5" />
           <link rel="shortcut icon" href="/favicon.ico" />
@@ -30,14 +30,14 @@ class MyDocument extends Document {
           <meta name="twitter:url" content={baseUrl} />
           <meta name="twitter:title" content="Chat App" />
           <meta name="twitter:description" content="Chat App With Nextjs and Socket.io" />
-          <meta name="twitter:image" content="`{baseUrl}`/static/icons/android-chrome-192x192.png.png" />
+          <meta name="twitter:image" content="`{baseUrl}`/icons/android-chrome-192x192.png" />
           <meta name="twitter:creator" content="@hhoomph" />
           <meta property="og:type" content="website" />
           <meta property="og:title" content="Chat App" />
           <meta property="og:description" content="Chat App With Nextjs and Socket.io, چت خصوصی, چت با دوستان" />
           <meta property="og:site_name" content="Chat App" />
           <meta property="og:url" content={baseUrl} />
-          <meta property="og:image" content="`{baseUrl}`/static/icons/android-chrome-192x192.png.png" />
+          <meta property="og:image" content="`{baseUrl}`/icons/android-chrome-192x192.png" />
           {/* apple splash screen images  */}
           {/* <link rel='apple-touch-startup-image' href='/static/images/apple_splash_2048.png' sizes='2048x2732' />
           <link rel='apple-touch-startup-image' href='/static/images/apple_splash_1668.png' sizes='1668x2224' />

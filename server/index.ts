@@ -97,11 +97,9 @@ app
           if (isOnline && isOnline != undefined && isOnline != null && isOnline?.username) {
             // Update socketId for online user
             await OnlineModel.updateSocket(socket.user?.username, newId);
-            io.socketsJoin(socket.id);
           } else {
             // Add user to online collection
             await OnlineModel.logOnline(socket.user?.username, newId);
-            io.socketsJoin(socket.id);
           }
           io.emit("connected", socket.user);
           console.log("New User Logged In with ID " + newId);
@@ -132,11 +130,14 @@ app
             const result2 = await OnlineModel.findUserByUsername(data.receiver);
             if (result2 && result2.socketId) {
               io.sockets.to(socket.id).to(result2.socketId).emit("new_message", res);
+              // io.to(socket.id).emit("new_message", res);
+              // io.to(result2.socketId).emit("new_message", res);
               // io.to(result2[0].socketId).emit("new_message", res);
               //socket.broadcast.to(result2[0].socketId).emit("willInitiateCall", res);
               // io.in(result2[0].socketId).emit("new_message", res);
             } else {
-              io.sockets.to(socket.id).emit("new_message", res);
+              // io.sockets.to(socket.id).emit("new_message", res);
+              io.to(socket.id).emit("new_message", res);
             }
             // io.to(result2.socketId).emit("new_message", res);
             // socket.to(socket.id).emit("new_message", res);
@@ -171,13 +172,13 @@ app
             callType: callType,
             user: socket.user,
           };
-          io.sockets.to(caleePersonalCode).emit("pre-offer", data2);
+          io.to(caleePersonalCode).emit("pre-offer", data2);
           // socket.to(caleePersonalCode).emit("pre-offer", data2);
         } else {
           const data2 = {
             preOfferAnswer: "CALEE_NOT_FOUND",
           };
-          io.sockets.to(socket.id).emit("pre-offer-answer", data2);
+          io.to(socket.id).emit("pre-offer-answer", data2);
         }
       });
       socket.on("pre-offer-answer", async (data) => {
@@ -185,7 +186,7 @@ app
           return peerSocketId === data.callerSocketId;
         });
         if (connectedPeer) {
-          io.sockets.to(data.callerSocketId).emit("pre-offer-answer", data);
+          io.to(data.callerSocketId).emit("pre-offer-answer", data);
         }
       });
       socket.on("webRTC-signaling", (data) => {
