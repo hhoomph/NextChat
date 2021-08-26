@@ -53,7 +53,7 @@ export type Constraints = {
   video: Video | boolean | Size;
   frameRate?: FrameRate;
   aspectRatio?: number;
-  width?: Width;
-  height?: Height;
+  width?: Width | number;
+  height?: Height | number;
   echoCancellation?: boolean;
 };

@@ -414,8 +414,8 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   // socket.on("pre-offer", (data: any) => {
   //   webRTCHandlerPreOffer(data);
   // });
-  return (
-    <Layout title="چت" user={user} socket={socket}>
+  const showVideo = useMemo(() => {
+    return (
       <Video
         socket={socket}
         user={user}
@@ -428,6 +428,11 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         preOfferAnswer={preOfferAnswer}
         connectedUserDetail={connectedUserDetail}
       />
+    );
+  }, [enterModal,user,inOrOutCall,connectedUserDetail, preOfferAnswer,acceptCallHandler,rejectCallHandler]);
+  return (
+    <Layout title="چت" user={user} socket={socket}>
+      {showVideo}
       <div className="container-fluid chat_wrapper">
         <div className="row mt-5 g-4">
           {receiverUser.username && (

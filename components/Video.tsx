@@ -6,6 +6,7 @@ import Image from "next/image";
 import { User, Constraints, ConnectedUserDetail } from "../types/Types";
 import { Socket } from "socket.io-client";
 import { useReceiver } from "./../contexts/ReceiverContext";
+// let pc: RTCPeerConnection;
 type Props = {
   socket: Socket;
   user?: User;
@@ -44,11 +45,14 @@ const Video = ({
   // });
   const [constraints] = useState<Constraints>({
     audio: true,
-    video: true,
+    video: {
+      width: 300,
+      height: 220,
+    },
     aspectRatio: 1.7777777778,
     echoCancellation: true,
-    width: { min: 640, max: 640 },
-    height: { min: 480, max: 480 },
+    // width: { min: 640, max: 640 },
+    // height: { min: 480, max: 480 },
   });
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -57,11 +61,26 @@ const Video = ({
   // const [screenShareActive, setScreenShareActive] = useState<boolean>(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  // let isFirefox = false;
+  // if (typeof window !== "undefined" && typeof window.navigator !== "undefined") {
+  //   const sUsrAg = navigator.userAgent;
+  //   isFirefox = sUsrAg.indexOf("Firefox") > -1 ? true : false;
+  // }
   //  Peer Connection
+  let pc: RTCPeerConnection;
   const peerConfiguration: RTCConfiguration = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.1.google.com:13902" }],
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    // iceServers: [{ urls: "stun:stun01.sipphone.com" }, { urls: "stun:stun.ekiga.net" }],
+    // iceServers: [
+    //   {
+    //     urls: !isFirefox ? "stun:stun.l.google.com:19302" : "stun:23.21.150.121",
+    //   },
+    // ],
+    // iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.1.google.com:13902" }],
   };
-  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
+  // const pc = new RTCPeerConnection(peerConfiguration);
+  // const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>(pc);
+  // const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
   const creatPeerConnection = () => {
     // const sUsrAg = navigator.userAgent;
     // const isFirefox = sUsrAg.indexOf("Firefox") > -1 ? true : false;
@@ -70,46 +89,50 @@ const Video = ({
     // window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection;
     // window.RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
     // window.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
-    const pc = new RTCPeerConnection(peerConfiguration);
-    setPeerConnection(pc);
-    if (peerConnection) {
-      peerConnection.onicecandidate = (event) => {
-        console.log("getting ice candidates from stun server");
-        if (event.candidate) {
-          // send our candidate to other peer
-          sendDataUsingWebRTCSignaling({
-            connectedUserSocketId: connectedUserDetail.socketId,
-            type: "ICE_CANDIDATE",
-            candidate: event.candidate,
-          });
-        }
-      };
-      peerConnection.onconnectionstatechange = (event) => {
-        if (peerConnection.connectionState === "connected") {
-          console.log("successfully connected with other peer", event);
-        }
-      };
-      // Receiving Track
-      const remoteStreamFromPeer = new MediaStream();
-      setRemoteStream(remoteStreamFromPeer);
-      peerConnection.ontrack = (event) => {
-        remoteStream?.addTrack(event.track);
-        // setRemoteStream(event.streams[0]);
-      };
-      let remoteVideo = remoteVideoRef.current;
-      if (remoteVideo) {
-        remoteVideo.srcObject = remoteStreamFromPeer;
+    pc = new RTCPeerConnection(peerConfiguration);
+    // setPeerConnection(pc);
+    pc.onicecandidate = (event) => {
+      console.log("getting ice candidates from stun server");
+      if (event.candidate) {
+        // send our candidate to other peer
+        sendDataUsingWebRTCSignaling({
+          connectedUserSocketId: connectedUserDetail.socketId,
+          type: "ICE_CANDIDATE",
+          candidate: event.candidate,
+        });
       }
-      remoteVideo?.play().catch((e) => {
-        console.log(e);
-      });
-      // Add our Stream to peer connection
-      // AUDIO_PERSONAL_CODE
-      if ((connectedUserDetail.callType === "VIDEO_PERSONAL_CODE" || connectedUserDetail.callType === "AUDIO_PERSONAL_CODE") && localStream) {
-        for (const track of localStream.getTracks()) {
-          peerConnection.addTrack(track, localStream);
-        }
+    };
+    pc.onconnectionstatechange = (event) => {
+      console.log(pc.connectionState);
+      if (pc.connectionState === "connected") {
+        console.log("successfully connected with other peer", event);
       }
+    };
+    pc.oniceconnectionstatechange = (e) => {
+      console.log(e);
+    };
+    // Receiving Track
+    const remoteStreamFromPeer = new MediaStream();
+    setRemoteStream(remoteStreamFromPeer);
+    pc.ontrack = (event) => {
+      remoteStream?.addTrack(event.track);
+      setRemoteStream(event.streams[0]);
+    };
+    let remoteVideo = remoteVideoRef.current;
+    if (remoteVideo) {
+      remoteVideo.srcObject = remoteStreamFromPeer;
+    }
+    remoteVideo?.play().catch((e) => {
+      console.log(e);
+    });
+    // Add our Stream to peer connection
+    // AUDIO_PERSONAL_CODE
+    if ((connectedUserDetail.callType === "VIDEO_PERSONAL_CODE" || connectedUserDetail.callType === "AUDIO_PERSONAL_CODE") && localStream) {
+      for (const track of localStream.getTracks()) {
+        pc.addTrack(track, localStream);
+      }
+    } else {
+      console.log("no local stream");
     }
   };
   // Main Video Modal
@@ -186,76 +209,78 @@ const Video = ({
         });
       }
     }
-  }, [remoteStream, peerConnection]);
-  const sendDataUsingWebRTCSignaling = (data: any) => {
-    socket.emit("webRTC-signaling", data);
-  };
-  const handleWebRTCOffer = async (data: any) => {
-    await peerConnection?.setRemoteDescription(data.offer);
-    const answer = await peerConnection?.createAnswer();
-    await peerConnection?.setLocalDescription(answer);
-    sendDataUsingWebRTCSignaling({
-      connectedUserSocketId: connectedUserDetail.socketId,
-      type: "ANSWER",
-      answer: answer,
-    });
-  };
-  const handleWebRTCAnswer = async (data: any) => {
-    await peerConnection?.setRemoteDescription(data.answer);
-  };
-  const handleWebRTCCandidate = async (data: any) => {
-    try {
-      await peerConnection?.addIceCandidate(data.candidate);
-    } catch (error) {
-      console.log("error occurred when trying to add receiving ice candidate", error);
-    }
-  };
-  useEffect(() => {
-    socket.on("webRTC-signaling", (data) => {
-      switch (data.type) {
-        case "OFFER":
-          handleWebRTCOffer(data);
-          break;
-        case "ANSWER":
-          handleWebRTCAnswer(data);
-          break;
-        case "ICE_CANDIDATE":
-          handleWebRTCCandidate(data);
-          break;
-        default:
-          break;
-      }
-    });
-    if (socket?.connected) {
-      return () => {
-        socket.off("webRTC-signaling");
-      };
-    }
-  }, [socket]);
+  }, [remoteStream]);
   useEffect(() => {
     const sendWebRTCOffer = async () => {
-      const offer = await peerConnection?.createOffer();
-      await peerConnection?.setLocalDescription(offer);
+      const offer = await pc?.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      await pc?.setLocalDescription(new RTCSessionDescription(offer));
       sendDataUsingWebRTCSignaling({
         connectedUserSocketId: connectedUserDetail.socketId,
         type: "OFFER",
         offer: offer,
       });
     };
-    if (preOfferAnswer === "CALL_ACCEPTED") {
+    if (preOfferAnswer === "CALL_ACCEPTED" && connectedUserDetail.socketId !== null) {
       setEnterModal(false);
       setModal(true);
-      acceptCallHandler();
       getLocalPrevie();
+      acceptCallHandler();
       creatPeerConnection();
       sendWebRTCOffer();
     }
-  }, [preOfferAnswer]);
+  }, [preOfferAnswer, connectedUserDetail]);
+  const sendDataUsingWebRTCSignaling = (data: any) => {
+    socket.emit("webRTC-signaling", data);
+  };
+  useEffect(() => {
+    const handleWebRTCOffer = async (data: any) => {
+      await pc?.setRemoteDescription(data.offer);
+      const answer = await pc?.createAnswer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
+      await pc?.setLocalDescription(answer);
+      sendDataUsingWebRTCSignaling({
+        connectedUserSocketId: connectedUserDetail.socketId,
+        type: "ANSWER",
+        answer: answer,
+      });
+    };
+    const handleWebRTCAnswer = async (data: any) => {
+      await pc?.setRemoteDescription(data.answer);
+    };
+    const handleWebRTCCandidate = async (data: any) => {
+      try {
+        await pc?.addIceCandidate(data.candidate);
+      } catch (error) {
+        console.log("error occurred when trying to add receiving ice candidate", error);
+      }
+    };
+    if (connectedUserDetail.socketId && connectedUserDetail.socketId !== null) {
+      socket.on("webRTC-signaling", (data) => {
+        switch (data.type) {
+          case "OFFER":
+            handleWebRTCOffer(data);
+            break;
+          case "ANSWER":
+            handleWebRTCAnswer(data);
+            break;
+          case "ICE_CANDIDATE":
+            handleWebRTCCandidate(data);
+            break;
+          default:
+            break;
+        }
+      });
+    }
+    if (socket?.connected) {
+      return () => {
+        socket.off("webRTC-signaling");
+      };
+    }
+  }, [connectedUserDetail, socket]);
   const acceptCall = () => {
     setEnterModal(false);
     setModal(true);
-    acceptCallHandler();
     getLocalPrevie();
+    acceptCallHandler();
     creatPeerConnection();
   };
   const rejectCall = () => {
