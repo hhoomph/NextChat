@@ -37,7 +37,8 @@
     "sass": "^1.35.1",
     "socket.io": "^4.1.2",
     "socket.io-client": "^4.1.2",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "webrtc-adapter": "^8.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.6",

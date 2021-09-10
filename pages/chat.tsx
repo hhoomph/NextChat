@@ -414,6 +414,9 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   // socket.on("pre-offer", (data: any) => {
   //   webRTCHandlerPreOffer(data);
   // });
+  // const peerConfiguration: RTCConfiguration = {
+  //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  // };
   const showVideo = useMemo(() => {
     return (
       <Video
@@ -429,7 +432,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         connectedUserDetail={connectedUserDetail}
       />
     );
-  }, [enterModal,user,inOrOutCall,connectedUserDetail, preOfferAnswer,acceptCallHandler,rejectCallHandler]);
+  }, [enterModal, user, inOrOutCall, connectedUserDetail, preOfferAnswer, acceptCallHandler, rejectCallHandler]);
   return (
     <Layout title="چت" user={user} socket={socket}>
       {showVideo}

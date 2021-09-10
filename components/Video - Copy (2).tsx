@@ -3,9 +3,11 @@ import "webrtc-adapter";
 import React, { useState, useRef, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 import Image from "next/image";
+// import jsCookie from "js-cookie";
 import { User, Constraints, ConnectedUserDetail } from "../types/Types";
 import { Socket } from "socket.io-client";
 import { useReceiver } from "./../contexts/ReceiverContext";
+// let pc: RTCPeerConnection;
 type Props = {
   socket: Socket;
   user?: User;
@@ -30,9 +32,18 @@ const Video = ({
   preOfferAnswer,
   connectedUserDetail,
 }: Props) => {
-
+  // const token = jsCookie.get("token");
+  // const username = user?.username;
   const { receiverUser } = useReceiver();
-
+  // const [constraints, setConstraints] = useState<Constraints>({ audio: true, video: true });
+  // const [constraints, setConstraints] = useState<Constraints>({
+  //   audio: true,
+  //   video: true,
+  //   aspectRatio: 1.7777777778,
+  //   echoCancellation: true,
+  //   width: { min: 640, max: 640 },
+  //   height: { min: 480, max: 480 },
+  // });
   const [constraints] = useState<Constraints>({
     audio: true,
     video: {
@@ -41,24 +52,54 @@ const Video = ({
     },
     aspectRatio: 1.7777777778,
     echoCancellation: true,
-
+    // width: { min: 640, max: 640 },
+    // height: { min: 480, max: 480 },
   });
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-
+  // const [screenSharingStream, setScreenSharingStream] = useState<MediaStream | null>(null);
+  // const [isMuted, setIsMuted] = useState<boolean>(false);
+  // const [screenShareActive, setScreenShareActive] = useState<boolean>(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
+  // let isFirefox = false;
+  // if (typeof window !== "undefined" && typeof window.navigator !== "undefined") {
+  //   const sUsrAg = navigator.userAgent;
+  //   isFirefox = sUsrAg.indexOf("Firefox") > -1 ? true : false;
+  // }
   //  Peer Connection
-  let pc: RTCPeerConnection;
+  let pcs: { [socketId: string]: RTCPeerConnection };
+  // let pc: RTCPeerConnection;
   const peerConfiguration: RTCConfiguration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-
+    // iceServers: [{ urls: "stun:stun01.sipphone.com" }, { urls: "stun:stun.ekiga.net" }],
+    // iceServers: [
+    //   {
+    //     urls: !isFirefox ? "stun:stun.l.google.com:19302" : "stun:23.21.150.121",
+    //   },
+    // ],
+    // iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.1.google.com:13902" }],
   };
-
+  // const pc = new RTCPeerConnection(peerConfiguration);
+  // const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>(pc);
+  // const [peerConnection, setPeerConnection] = useState<RTCPeerConnection>();
   const creatPeerConnection = () => {
-
-    pc = new RTCPeerConnection(peerConfiguration);
+    // const sUsrAg = navigator.userAgent;
+    // const isFirefox = sUsrAg.indexOf("Firefox") > -1 ? true : false;
+    //compatibility for firefox and chrome
+    // window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+    // window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+    // window.RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
+    // window.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+    let pc = new RTCPeerConnection(peerConfiguration);
+    let sId: string;
+    if (connectedUserDetail.socketId) {
+      sId = connectedUserDetail.socketId;
+    } else {
+      sId = "1";
+    }
+    pcs = { ...pcs, [sId]: pc };
+    // setPeerConnection(pc);
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         console.log("onicecandidate");
@@ -111,6 +152,9 @@ const Video = ({
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
   // Entering Modal
+  // const toggleEnterModal = () => {
+  //   setEnterModal(!enterModal);
+  // };
   const showEnterModal = enterModal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   // const enterModalRef = React.useRef(null);
   const [videoBtn, setVideoBtn] = useState<boolean>(false);
