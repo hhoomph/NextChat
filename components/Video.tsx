@@ -30,9 +30,7 @@ const Video = ({
   preOfferAnswer,
   connectedUserDetail,
 }: Props) => {
-
   const { receiverUser } = useReceiver();
-
   const [constraints] = useState<Constraints>({
     audio: true,
     video: {
@@ -41,23 +39,18 @@ const Video = ({
     },
     aspectRatio: 1.7777777778,
     echoCancellation: true,
-
   });
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
   //  Peer Connection
   let pc: RTCPeerConnection;
+  const peerRef = useRef<RTCPeerConnection>();
   const peerConfiguration: RTCConfiguration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-
   };
-
   const creatPeerConnection = () => {
-
     pc = new RTCPeerConnection(peerConfiguration);
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -85,6 +78,9 @@ const Video = ({
     pc.ontrack = (event) => {
       remoteStream?.addTrack(event.track);
       setRemoteStream(event.streams[0]);
+      if (remoteVideoRef?.current?.srcObject) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      }
     };
     let remoteVideo = remoteVideoRef.current;
     if (remoteVideo) {
@@ -93,8 +89,22 @@ const Video = ({
     remoteVideo?.play().catch((e) => {
       console.log(e);
     });
+    pc.onnegotiationneeded = () =>
+      peerRef?.current
+        ?.createOffer()
+        .then((offer) => {
+          return peerRef?.current?.setLocalDescription(offer);
+          // await peerRef.current?.setLocalDescription(new RTCSessionDescription(offer));
+        })
+        .then(() => {
+          sendDataUsingWebRTCSignaling({
+            connectedUserSocketId: connectedUserDetail.socketId,
+            type: "OFFER",
+            offer: peerRef?.current?.localDescription,
+          });
+        })
+        .catch((e) => console.log(e));
     // Add our Stream to peer connection
-    // AUDIO_PERSONAL_CODE
     if ((connectedUserDetail.callType === "VIDEO_PERSONAL_CODE" || connectedUserDetail.callType === "AUDIO_PERSONAL_CODE") && localStream) {
       for (const track of localStream.getTracks()) {
         pc.addTrack(track, localStream);
@@ -102,6 +112,7 @@ const Video = ({
     } else {
       console.log("no local stream");
     }
+    return pc;
   };
   // Main Video Modal
   const [modal, setModal] = useState<boolean>(false);
@@ -177,8 +188,10 @@ const Video = ({
   }, [remoteStream]);
   useEffect(() => {
     const sendWebRTCOffer = async () => {
-      const offer = await pc?.createOffer();
-      await pc?.setLocalDescription(new RTCSessionDescription(offer));
+      peerRef.current = creatPeerConnection();
+      console.log("first :", peerRef.current);
+      const offer = await peerRef.current?.createOffer();
+      await peerRef.current?.setLocalDescription(new RTCSessionDescription(offer));
       sendDataUsingWebRTCSignaling({
         connectedUserSocketId: connectedUserDetail.socketId,
         type: "OFFER",
@@ -190,7 +203,7 @@ const Video = ({
       setEnterModal(false);
       setModal(true);
       acceptCallHandler();
-      creatPeerConnection();
+      // creatPeerConnection();
       sendWebRTCOffer();
     }
   }, [preOfferAnswer, connectedUserDetail]);
@@ -199,22 +212,26 @@ const Video = ({
   };
   useEffect(() => {
     const handleWebRTCOffer = async (data: any) => {
-      await pc?.setRemoteDescription(data.offer);
-      const answer = await pc?.createAnswer();
-      await pc?.setLocalDescription(answer);
-      sendDataUsingWebRTCSignaling({
-        connectedUserSocketId: connectedUserDetail.socketId,
-        type: "ANSWER",
-        answer: answer,
-      });
+      peerRef.current = creatPeerConnection();
+      if (peerRef.current) {
+        console.log("second :", peerRef.current);
+        await peerRef.current?.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerRef.current?.createAnswer();
+        await peerRef.current?.setLocalDescription(new RTCSessionDescription(answer));
+        sendDataUsingWebRTCSignaling({
+          connectedUserSocketId: connectedUserDetail.socketId,
+          type: "ANSWER",
+          answer: answer,
+        });
+      }
     };
     const handleWebRTCAnswer = async (data: any) => {
-      await pc?.setRemoteDescription(data.answer);
+      await peerRef.current?.setRemoteDescription(new RTCSessionDescription(data.answer));
       console.log("answered");
     };
     const handleWebRTCCandidate = async (data: any) => {
       try {
-        await pc?.addIceCandidate(data.candidate);
+        await peerRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate));
         console.log("get candidate ");
       } catch (error) {
         console.log("error occurred when trying to add receiving ice candidate", error);
@@ -248,7 +265,8 @@ const Video = ({
     setEnterModal(false);
     setModal(true);
     acceptCallHandler();
-    creatPeerConnection();
+    // creatPeerConnection();
+    peerRef.current = creatPeerConnection();
   };
   const rejectCall = () => {
     setEnterModal(false);
