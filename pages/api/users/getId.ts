@@ -22,13 +22,17 @@ const GetId = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(401).json({ message: "این درخواست برای شما مجاز نمی باشد." });
       }
       const { username } = req.body;
-      const userRes = await OnlineModel.findUserByUsername(username);
-      // If no username, user doesn't exist
-      if (!userRes || userRes === null || userRes === undefined) {
-        return res.status(404).json({ message: "کاربری با این نام پیدا نشد." });
+      if (username) {
+        const userRes = await OnlineModel.findUserByUsername(username);
+        // If no username, user doesn't exist
+        if (!userRes || userRes === null || userRes === undefined) {
+          return res.status(404).json({ message: "کاربری با این نام پیدا نشد." });
+        } else {
+          // Send all-clear with _id as token
+          return res.status(200).json({ user: userRes });
+        }
       } else {
-        // Send all-clear with _id as token
-        return res.status(200).json({ user: userRes });
+        return res.status(404).json({ message: "نام کاربری وارد نشده." });
       }
       break;
     case "GET":

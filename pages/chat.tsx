@@ -42,6 +42,8 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     setNewMsg(null);
     setToast(false);
   };
+  const [audioNotif] = useState<HTMLAudioElement | any>(typeof Audio !== "undefined" && new Audio("/sound/Notification.mp3"));
+  const [audioRing] = useState<HTMLAudioElement | any>(typeof Audio !== "undefined" && new Audio("/sound/RingTone.mp3"));
   // const router = useRouter();
   const [toast, setToast] = useState<boolean>(false);
   const toggleToast = () => {
@@ -94,12 +96,13 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       },
       token
     );
-    const user = res && res.user ? res.user : false;
-    if (user) {
+    const u = res && res.user ? res.user : false;
+    if (u) {
       const newUsr = receiverUser;
-      newUsr.ID = user.socketId;
+      newUsr.ID = u.socketId;
       setReceiverUser(newUsr);
-      return user.socketId;
+      setCaller(u.socketId);
+      return u.socketId;
     } else {
       return undefined;
     }
@@ -153,6 +156,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   useEffect(() => {
     socket?.on("new_message", async (data: MessageType) => {
       if (receiverUser.username == "" || (receiverUser.username != data.receiver && receiverUser.username != data.sender)) {
+        audioNotif.play();
         const newM = data;
         let date = newM?.createdAt ? new Date(newM?.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString();
         newM.createdAt = date;
@@ -327,16 +331,17 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   //   setCallModal(!callModal);
   // };
   const showCallModal = callModal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
-  const callModalRef = React.useRef(null);
+  // const callModalRef = React.useRef(null);
   const [enterModal, setEnterModal] = useState<boolean>(false);
+  const enterModalRef = React.useRef(null);
   const [videoBtn, setVideoBtn] = useState<boolean>(false);
   const minimizeVideo = () => {
-    setModal(false);
+    setCallModal(false);
     setVideoBtn(true);
   };
   const maximizeVideo = () => {
     setVideoBtn(false);
-    setModal(true);
+    setCallModal(true);
   };
   const [placeholder, setPlaceholder] = useState<boolean>(true);
   const [stream, setStream] = useState<MediaStream>();
@@ -354,7 +359,6 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   const [callerSignal, setCallerSignal] = useState<any>();
   const [callAccepted, setCallAccepted] = useState<boolean>(false);
   // const [idToCall, setIdToCall] = useState<any>("");
-  const [callEnded, setCallEnded] = useState<boolean>(false);
   const showEnterModal =
     enterModal && stream && !callAccepted
       ? { display: "block", transition: "all 250ms ease-in-out" }
@@ -368,19 +372,22 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   useEffect(() => {
     socket.on("startCall", (data) => {
       console.log("startCall");
+      audioRing.play();
       // setReceivingCall(true);
       setEnterModal(true);
-      setCaller(data.from);
       if (data.from !== socket.id) {
         setName(data.fromName);
+        setCaller(data.from);
+        // setReceivingCall(true);
       } else {
         setName(data.name);
+        setCaller(data.userToCall);
       }
       if (data.startCall) {
         setcalling(true);
       }
     });
-  }, []);
+  }, [socket]);
   const [audio, setAudio] = useState<boolean>(true);
   const toggleAudio = () => {
     setAudio(!audio);
@@ -440,6 +447,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     });
     socket.on("callUser", (data) => {
       console.log("calluser");
+      // getLocalPrevie();
       if (data.answer) {
         setAnswer(data.answer);
         setTimeout(() => {
@@ -452,6 +460,18 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         // setName(data.name);
         setCallerSignal(data.signal);
       }
+    });
+    socket.on("endCall", () => {
+      console.log("endCall");
+      setReceivingCall(false);
+      setEnterModal(false);
+      setCallModal(false);
+      setVideoBtn(false);
+      setCallAccepted(false);
+      setCallOut(false);
+      audioRing.pause();
+      audioRing.currentTime = 0;
+      if (connectionRef.current) connectionRef.current.destroy();
     });
   }, [socket]);
   useEffect(() => {
@@ -466,7 +486,11 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       });
     });
   }, [receivingCall, callAccepted, calling]);
-  const callUser = (id: string | undefined = receiverUser.ID) => {
+  const [callOut, setCallOut] = useState(false);
+  const callUser = async (id: string | undefined = receiverUser.ID) => {
+    setCallOut(true);
+    await getReceiverUserId();
+    setAnswer("");
     getLocalPrevie();
     setEnterModal(true);
     socket.emit("startCall", {
@@ -497,10 +521,11 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       setPlaceholder(false);
       setCallModal(true);
       peer.signal(signal);
+      audioRing.pause();
     });
     if (connectionRef.current) connectionRef.current = peer;
   };
-  const answerCall = () => {
+  const answerCall = async () => {
     setCallAccepted(true);
     setCallModal(true);
     setPlaceholder(false);
@@ -509,25 +534,31 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       trickle: false,
       stream: stream,
     });
+    peer.signal(callerSignal);
     peer.on("signal", (data) => {
       socket.emit("answerCall", { signal: data, to: caller });
     });
     peer.on("stream", (stream) => {
       if (userVideo.current) userVideo.current.srcObject = stream;
     });
-    peer.signal(callerSignal);
     connectionRef.current = peer;
   };
   const leaveCall = () => {
-    setCallEnded(true);
     setEnterModal(false);
     setCallModal(false);
     setVideoBtn(false);
+    setCallOut(false);
+    audioRing.pause();
+    audioRing.currentTime = 0;
+    socket.emit("endCall", {
+      userToCall: caller ? caller : receiverUser.ID,
+      userId: socket.id,
+    });
     if (connectionRef.current) connectionRef.current.destroy();
   };
   const ShowVideo = () => {
     return (
-      <CSSTransition timeout={300} appear={true} classNames="fade" in={callModal} nodeRef={callModalRef}>
+      <CSSTransition timeout={300} appear={true} classNames="fade" in={enterModal} nodeRef={enterModalRef}>
         <>
           <div
             className="modal fade show"
@@ -553,10 +584,27 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
                   <div className="video_icon call_cancel" onClick={leaveCall}>
                     <Image src="/icons/telephone-x-red.svg" alt="Cancel Call" width={35} height={35} />
                   </div>
-                  {receivingCall && !callAccepted && caller !== socket.id && !callEnded && (
-                    <div className="video_icon call_accept" onClick={answerCall}>
-                      <Image src="/icons/telephone-inbound.svg" alt="Accept Call" width={35} height={35} />
-                    </div>
+                  {caller !== socket.id && (
+                    <>
+                      {receivingCall ? (
+                        <div
+                          className="video_icon call_accept"
+                          onClick={async () => {
+                            await answerCall();
+                          }}
+                        >
+                          <Image src="/icons/telephone-inbound.svg" alt="Accept Call" width={35} height={35} />
+                        </div>
+                      ) : (
+                        !callOut && (
+                          <div className="video_icon call_accept">
+                            <div className="spinner-border text-success" role="status">
+                              <span className="visually-hidden">Loading...</span>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -670,10 +718,22 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
             <div className="col-12 text-center receiver_username">
               <h4>{receiverUser.username}</h4>
               <div className="video_call_wrapper">
-                <div className="video_call_btn" onClick={() => callUser(receiverUser.ID)}>
+                <div
+                  className="video_call_btn"
+                  onClick={async () => {
+                    await getReceiverUserId();
+                    callUser(receiverUser.ID);
+                  }}
+                >
                   <Image src="/icons/video-call-fill.svg" alt="Mic" width={28} height={28} />
                 </div>
-                <div className="audio_call_btn" onClick={() => callUser(receiverUser.ID)}>
+                <div
+                  className="audio_call_btn"
+                  onClick={async () => {
+                    await getReceiverUserId();
+                    callUser(receiverUser.ID);
+                  }}
+                >
                   <Image src="/icons/telephone-outbound-fill.svg" alt="Mic" width={25} height={25} />
                 </div>
               </div>

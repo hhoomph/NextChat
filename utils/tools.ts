@@ -133,4 +133,5 @@ export const getDistance = (lat1: any, lon1: any, lat2: any, lon2: any) => {
 export const EMAIL_RX = /[A-Z0-9a-z._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,64}/;
 // Mobile Validation Regex
 export const Mobile_RX = /(\+98|0|98|0098)?([ ]|-|[()]){0,2}9[0-9]([ ]|-|[()]){0,2}(?:[0-9]([ ]|-|[()]){0,2}){8}/;
+export const isClient = typeof window !== "undefined" && window.document && window.document.createElement;
 export default numberSeparator;

@@ -56,13 +56,17 @@ const Get = async (req: NextApiRequest, res: NextApiResponse) => {
         res.end();
       }
       const { user } = req.query;
-      let userResult = await UserModel.findByUsername(user.toString());
-      // If no username, user doesn't exist
-      if (!userResult || userResult === null || userResult === undefined) {
-        return res.status(404).json({ message: "کاربری با این نام پیدا نشد." });
+      if (user) {
+        let userResult = await UserModel.findByUsername(user.toString());
+        // If no username, user doesn't exist
+        if (!userResult || userResult === null || userResult === undefined) {
+          return res.status(404).json({ message: "کاربری با این نام پیدا نشد." });
+        } else {
+          // Send all-clear with _id as token
+          return res.status(200).json({ newUser: userResult });
+        }
       } else {
-        // Send all-clear with _id as token
-        return res.status(200).json({ newUser: userResult });
+        return res.status(404).json({ message: "نام کاربری وارد نشده." });
       }
       break;
     case "PUT":
