@@ -1,19 +1,19 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { GetServerSideProps } from "next";
 import nextCookies from "next-cookies";
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo,useRef } from "react";
 // import Link from "next/link";
 import Layout from "../components/Layout";
 import { withAuthSync, withAuthServerSideProps } from "../utils/auth";
 import { NextPage, GetServerSidePropsContext } from "next";
 // import { useSocketIo, useSocketListener, useSocketManagerListener } from "../contexts/SocketIoContext";
 // import { useSocket } from "../contexts/SocketContext";
-import { User, MessageType, Constraints } from "../types/Types";
+import { User, MessageType, ConnectedUserDetail } from "../types/Types";
 import { useReceiver } from "../contexts/ReceiverContext";
 import Image from "next/image";
 import UserButton from "../components/UserButton";
 import Message from "../components/Message";
-// import Video from "../components/Video";
+import Video from "../components/Video";
 import { Picker } from "emoji-mart";
 import "emoji-mart/css/emoji-mart.css";
 import { CSSTransition } from "react-transition-group";
@@ -21,7 +21,6 @@ import fetchData from "../utils/fetchData";
 import { animateScroll, Element } from "react-scroll";
 import { removeDuplicateObjects } from "../utils/tools";
 import { io as socketIo, Socket } from "socket.io-client";
-import Peer, { Instance } from "simple-peer";
 // import jsCookie from "js-cookie";
 // const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "8080", 10);
@@ -82,7 +81,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       return false;
     }
   };
-  // const [inOrOutCall, setInOrOutCall] = useState<string>("");
+  const [inOrOutCall, setInOrOutCall] = useState<string>("");
   const getReceiverUserId = async (): Promise<void> => {
     const res = await fetchData(
       `/api/users/getId`,
@@ -104,6 +103,9 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       return undefined;
     }
   };
+  useEffect(() => {
+    getReceiverUserId();
+  }, [receiverUser, inOrOutCall]);
   const iniSocket = socketIo(baseUrl, {
     withCredentials: true,
     query: token ? { token } : undefined,
@@ -210,8 +212,16 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         });
       }
     });
+    socket.on("pre-offer", (data: any) => {
+      webRTCHandlerPreOffer(data);
+    });
+    socket.on("pre-offer-answer", (data: any) => {
+      webRTCHandlerPreOfferAnswer(data);
+    });
     return () => {
       socket?.off("new_message");
+      socket?.off("pre-offer");
+      socket?.off("pre-offer-answer");
     };
   }, [socket, receiverUser]);
   useEffect(() => {
@@ -287,7 +297,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   const showUsers = useMemo(
     () =>
       allUsers?.map((usr) => {
-        return <UserButton key={usr._id} user={usr} newMsg={newMsg} toggleNeMsg={toggleNeMsg} socket={socket} onClick={getReceiverUserId} />;
+        return <UserButton key={usr._id} user={usr} newMsg={newMsg} toggleNeMsg={toggleNeMsg} socket={socket} />;
       }),
     [allUsers, newMsg, socket, allMessage]
   );
@@ -319,361 +329,120 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   };
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
-  // let pc: RTCPeerConnection;
-  // const pc = useRef();
-  //  Peer Connection
-  const [callModal, setCallModal] = useState<boolean>(false);
-  // const toggleCallModal = () => {
-  //   setCallModal(!callModal);
-  // };
-  const showCallModal = callModal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
-  const callModalRef = React.useRef(null);
-  const [enterModal, setEnterModal] = useState<boolean>(false);
-  const [videoBtn, setVideoBtn] = useState<boolean>(false);
-  const minimizeVideo = () => {
-    setModal(false);
-    setVideoBtn(true);
-  };
-  const maximizeVideo = () => {
-    setVideoBtn(false);
-    setModal(true);
-  };
-  const [placeholder, setPlaceholder] = useState<boolean>(true);
-  const [stream, setStream] = useState<MediaStream>();
-  const [, setLocalStream] = useState<MediaStream>();
-  const [receivingCall, setReceivingCall] = useState(false);
-  const [recording] = useState<boolean>(true);
-  // const [recording, setRecording] = useState<boolean>(true);
-  // const toggleRecording = () => {
-  //   setRecording(!recording);
-  // };
-  useEffect(() => {
-    getReceiverUserId();
-  }, [receiverUser, receivingCall, enterModal]);
-  const [caller, setCaller] = useState<string>("");
-  const [callerSignal, setCallerSignal] = useState<any>();
-  const [callAccepted, setCallAccepted] = useState<boolean>(false);
-  // const [idToCall, setIdToCall] = useState<any>("");
-  const [callEnded, setCallEnded] = useState<boolean>(false);
-  const showEnterModal =
-    enterModal && stream && !callAccepted
-      ? { display: "block", transition: "all 250ms ease-in-out" }
-      : { display: "none", transition: "all 250ms ease-in-out" };
-  const [name, setName] = useState<string>("");
-  const myVideo = useRef<HTMLVideoElement>(null);
-  const userVideo = useRef<HTMLVideoElement>(null);
-  const connectionRef = useRef<Instance>();
-  const [answer, setAnswer] = useState<string>("");
-  const [calling, setcalling] = useState<boolean>(false);
-  useEffect(() => {
-    socket.on("startCall", (data) => {
-      console.log("startCall");
-      // setReceivingCall(true);
-      setEnterModal(true);
-      setCaller(data.from);
-      if (data.from !== socket.id) {
-        setName(data.fromName);
-      } else {
-        setName(data.name);
-      }
-      if (data.startCall) {
-        setcalling(true);
-      }
-    });
-  }, []);
-  const [audio, setAudio] = useState<boolean>(true);
-  const toggleAudio = () => {
-    setAudio(!audio);
-  };
-  const [video, setVideo] = useState<any>({
-    width: 600,
-    height: 440,
-  });
-  const toggleVideo = () => {
-    if (video) {
-      setVideo(false);
-    } else {
-      setVideo({
-        width: 600,
-        height: 440,
-      });
-    }
-  };
-  const [constraints] = useState<Constraints>({
-    audio: audio,
-    video: video,
-    aspectRatio: 1.7777777778,
-    echoCancellation: true,
-    // width: { min: 640, max: 640 },
-    // height: { min: 480, max: 480 },
-  });
-  const getLocalPrevie = () => {
-    setPlaceholder(false);
-    navigator.mediaDevices
-      .getUserMedia(constraints)
-      .then((stream) => {
-        setLocalStream(stream);
-        let video = myVideo.current;
-        if (video) {
-          video.srcObject = stream;
-        }
-        video?.play().catch((e) => {
-          console.log(e);
-        });
-      })
-      .catch((error) => {
-        console.log("error occurred when trying to get an access to camera ");
-        console.log(error);
-      });
-  };
-  useEffect(() => {
-    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-      setStream(stream);
-      if (myVideo?.current) {
-        myVideo.current.srcObject = stream;
-        myVideo.current?.addEventListener("loadedmetadata", () => {
-          myVideo.current?.play().catch((e) => {
-            console.log(e);
-          });
-        });
-      }
-    });
-    socket.on("callUser", (data) => {
-      console.log("calluser");
-      if (data.answer) {
-        setAnswer(data.answer);
-        setTimeout(() => {
-          setEnterModal(false);
-        }, 3000);
-      } else {
-        setReceivingCall(true);
-        // setEnterModal(true);
-        // setCaller(data.from);
-        // setName(data.name);
-        setCallerSignal(data.signal);
-      }
-    });
-  }, [socket]);
-  useEffect(() => {
-    // getLocalPrevie();
-    if (myVideo.current && stream) {
-      myVideo.current.srcObject = stream;
-    }
-    let video = myVideo.current;
-    video?.addEventListener("loadedmetadata", () => {
-      video?.play().catch((e) => {
-        console.log(e);
-      });
-    });
-  }, [receivingCall, callAccepted, calling]);
-  const callUser = (id: string | undefined = receiverUser.ID) => {
-    getLocalPrevie();
-    setEnterModal(true);
-    socket.emit("startCall", {
-      userToCall: receiverUser.ID,
-      from: socket.id,
-      fromName: user?.username,
-      name: receiverUser.username,
-    });
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream: stream,
-    });
-    setPlaceholder(false);
-    peer.on("signal", (data) => {
-      socket.emit("callUser", {
-        userToCall: id,
-        signalData: data,
-        from: socket.id,
-        name: receiverUser.username,
-      });
-    });
-    peer.on("stream", (stream) => {
-      if (userVideo.current) userVideo.current.srcObject = stream;
-    });
-    socket.on("callAccepted", (signal) => {
-      setCallAccepted(true);
-      setPlaceholder(false);
-      setCallModal(true);
-      peer.signal(signal);
-    });
-    if (connectionRef.current) connectionRef.current = peer;
-  };
-  const answerCall = () => {
-    setCallAccepted(true);
-    setCallModal(true);
-    setPlaceholder(false);
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream: stream,
-    });
-    peer.on("signal", (data) => {
-      socket.emit("answerCall", { signal: data, to: caller });
-    });
-    peer.on("stream", (stream) => {
-      if (userVideo.current) userVideo.current.srcObject = stream;
-    });
-    peer.signal(callerSignal);
-    connectionRef.current = peer;
-  };
-  const leaveCall = () => {
-    setCallEnded(true);
+  const [connectedUserDetail, setConnectedUserDetail] = useState<ConnectedUserDetail>({ socketId: "", callType: "" });
+  const [preOfferAnswer, setPreOfferAnswer] = useState<string>("");
+  const webRTCHandlerSendPreOffer = async (callType: string) => {
     setEnterModal(false);
-    setCallModal(false);
-    setVideoBtn(false);
-    if (connectionRef.current) connectionRef.current.destroy();
+    setInOrOutCall("OutcomingCall");
+    setPreOfferAnswer("");
+    await getReceiverUserId();
+    setConnectedUserDetail({
+      socketId: receiverUser.ID,
+      callType: callType,
+    });
+    if (callType === "VIDEO_PERSONAL_CODE" || callType === "AUDIO_PERSONAL_CODE") {
+      const data = {
+        callType: callType,
+        caleePersonalCode: receiverUser.ID,
+      };
+      socket.emit("pre-offer", data);
+      setEnterModal(true);
+    }
   };
-  const ShowVideo = () => {
+  const [enterModal, setEnterModal] = useState<boolean>(false);
+  const [callerUserName, setCallerUserName] = useState<string>("");
+  const webRTCHandlerPreOffer = (data: any) => {
+    setPreOfferAnswer("");
+    const { callType, callerSocketId, user } = data;
+    setConnectedUserDetail({
+      socketId: callerSocketId,
+      callType: callType,
+    });
+    setEnterModal(false);
+    if (callType === "VIDEO_PERSONAL_CODE" || callType === "AUDIO_PERSONAL_CODE") {
+      if (socket.id === callerSocketId) {
+        setInOrOutCall("OutcomingCall");
+      } else {
+        // setReceiverUser(user);
+        setCallerUserName(user.username);
+        setInOrOutCall("IncomingCall");
+      }
+      setEnterModal(true);
+    }
+  };
+  const webRTCPreOfferAnswer = (preOfferAnswer: any) => {
+    const data = {
+      callerSocketId: connectedUserDetail.socketId,
+      preOfferAnswer: preOfferAnswer,
+    };
+    socket.emit("pre-offer-answer", data);
+  };
+  const acceptCallHandler = () => {
+    webRTCPreOfferAnswer("CALL_ACCEPTED");
+  };
+  const rejectCallHandler = () => {
+    webRTCPreOfferAnswer("CALL_REJECTED");
+  };
+  const webRTCHandlerPreOfferAnswer = (data: any) => {
+    const { preOfferAnswer } = data;
+    // if (socket.id === data.callerSocketId) {
+    // } else {
+    //   // setEnterModal(false);
+    // }
+    if (preOfferAnswer === "CALEE_NOT_FOUND") {
+      setPreOfferAnswer("کاربر مورد نظر در دسترس نیست.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALEE_IS_ON_ANOTHER_CALL") {
+      setPreOfferAnswer("مخاطب در حال مکالمه است.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALL_REJECTED") {
+      setPreOfferAnswer("تماس شما توسط مخاطب لغو شد.");
+      setTimeout(() => {
+        setEnterModal(false);
+      }, 3000);
+    }
+    if (preOfferAnswer === "CALL_ACCEPTED") {
+      setPreOfferAnswer("CALL_ACCEPTED");
+    }
+  };
+  // let pc: RTCPeerConnection;
+  const pc = useRef();
+  const showVideo = useMemo(() => {
     return (
-      <CSSTransition timeout={300} appear={true} classNames="fade" in={callModal} nodeRef={callModalRef}>
-        <>
-          <div
-            className="modal fade show"
-            id="enter_modal"
-            data-bs-backdrop="static"
-            tabIndex={-1}
-            aria-labelledby="enter_modal"
-            aria-hidden="true"
-            style={showEnterModal}
-          >
-            <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-              <div className="modal-content">
-                <div className="modal-body">
-                  <div className="user_info">
-                    <div className="usr_img">
-                      <Image src="/icons/person-square.svg" alt="User" width={200} height={200} />
-                    </div>
-                    <div className="usr_name">{receiverUser.username ? receiverUser.username : name}</div>
-                    {answer !== "" && answer !== "CALL_ACCEPTED" && <div className="call_info">{answer}</div>}
-                  </div>
-                </div>
-                <div className="modal-footer text-center">
-                  <div className="video_icon call_cancel" onClick={leaveCall}>
-                    <Image src="/icons/telephone-x-red.svg" alt="Cancel Call" width={35} height={35} />
-                  </div>
-                  {receivingCall && !callAccepted && caller !== socket.id && !callEnded && (
-                    <div className="video_icon call_accept" onClick={answerCall}>
-                      <Image src="/icons/telephone-inbound.svg" alt="Accept Call" width={35} height={35} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            className="modal fade show"
-            id="video_modal"
-            data-bs-backdrop="static"
-            tabIndex={-1}
-            aria-labelledby="video_modal"
-            aria-hidden="true"
-            style={showCallModal}
-          >
-            <div className="modal-dialog modal-dialog-scrollable modal-xl">
-              <div className="modal-content">
-                <div className="modal-header">
-                  {/* <h5 className="modal-title"></h5> */}
-                  <div className="close header_icon" data-bs-dismiss="modal" aria-label="Close" onClick={leaveCall}>
-                    <Image src="/icons/x.svg" alt="Close" width={40} height={40} />
-                  </div>
-                  <div className="minimize header_icon" onClick={minimizeVideo}>
-                    <Image src="/icons/dash.svg" alt="Minimize" width={40} height={40} />
-                  </div>
-                </div>
-                <div className="modal-body">
-                  {placeholder && (
-                    <div className="placeholder_video d-flex justify-content-center w-100 h-100">
-                      <div className="spinner-border text-primary m-auto" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="local_video">
-                    <video autoPlay={true} id="local_video" ref={myVideo} muted={true} />
-                  </div>
-                  <div className="remote_video">
-                    <video id="remote_video" playsInline ref={userVideo} autoPlay />
-                  </div>
-                  {recording && (
-                    <div className="recording">
-                      <div className="rec_icon">
-                        <Image src="/icons/stop-circle.svg" alt="Stop" width={20} height={20} />
-                      </div>
-                      <div className="rec_icon">
-                        <Image src="/icons/pause-circle.svg" alt="Pause" width={20} height={20} />
-                      </div>
-                      <div className="rec_icon">
-                        <Image src="/icons/play-circle.svg" alt="Pause" width={20} height={20} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="modal-footer">
-                  <div className="video_icon record">
-                    <Image src="/icons/record-circle.svg" alt="Record" width={20} height={20} />
-                  </div>
-                  <div className="video_icon camera" onClick={toggleVideo}>
-                    <Image src="/icons/camera-video-off.svg" alt="Camera" width={20} height={20} />
-                  </div>
-                  <div className="video_icon call" onClick={leaveCall}>
-                    <Image src="/icons/telephone-x.svg" alt="Call" width={35} height={35} />
-                  </div>
-                  <div className="video_icon shareScreen">
-                    <Image src="/icons/pc-share.svg" alt="Mic" width={20} height={20} />
-                  </div>
-                  <div className="video_icon mic" onClick={toggleAudio}>
-                    <Image src="/icons/mic-mute.svg" alt="Mic" width={20} height={20} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {videoBtn && (
-            <div className="video_call_maximize" onClick={maximizeVideo}>
-              <div className="video_call_btn">
-                <Image src="/icons/camera-video-fill.svg" alt="Mic" width={45} height={45} />
-              </div>
-            </div>
-          )}
-        </>
-      </CSSTransition>
+      <Video
+        socket={socket}
+        user={user}
+        enterModal={enterModal}
+        setEnterModal={setEnterModal}
+        inOrOutCall={inOrOutCall}
+        callerUserName={callerUserName}
+        acceptCallHandler={acceptCallHandler}
+        rejectCallHandler={rejectCallHandler}
+        preOfferAnswer={preOfferAnswer}
+        connectedUserDetail={connectedUserDetail}
+        pc={pc}
+      />
     );
-  };
-  // const showVideo = useMemo(() => {
-  //   return (
-  //     <Video
-  //       socket={socket}
-  //       user={user}
-  //       enterModal={enterModal}
-  //       setEnterModal={setEnterModal}
-  //       inOrOutCall={inOrOutCall}
-  //       callerUserName={callerUserName}
-  //       acceptCallHandler={acceptCallHandler}
-  //       rejectCallHandler={rejectCallHandler}
-  //       preOfferAnswer={preOfferAnswer}
-  //       connectedUserDetail={connectedUserDetail}
-  //       localStream={localStream}
-  //       remoteStream={remoteStream}
-  //       setLocalStream={setLocalStream}
-  //       answerCall={answerCall}
-  //     />
-  //   );
-  // }, [enterModal, user, inOrOutCall, connectedUserDetail, preOfferAnswer, acceptCallHandler, rejectCallHandler]);
+  }, [enterModal, user, inOrOutCall, connectedUserDetail, preOfferAnswer, acceptCallHandler, rejectCallHandler]);
   return (
     <Layout title="چت" user={user} socket={socket}>
-      {/* {ShowVideo} */} <ShowVideo />
+      {showVideo}
       <div className="container-fluid chat_wrapper">
         <div className="row mt-5 g-4">
           {receiverUser.username && (
             <div className="col-12 text-center receiver_username">
               <h4>{receiverUser.username}</h4>
               <div className="video_call_wrapper">
-                <div className="video_call_btn" onClick={() => callUser(receiverUser.ID)}>
+                <div className="video_call_btn" onClick={() => webRTCHandlerSendPreOffer("VIDEO_PERSONAL_CODE")}>
                   <Image src="/icons/video-call-fill.svg" alt="Mic" width={28} height={28} />
                 </div>
-                <div className="audio_call_btn" onClick={() => callUser(receiverUser.ID)}>
+                <div className="audio_call_btn" onClick={() => webRTCHandlerSendPreOffer("AUDIO_PERSONAL_CODE")}>
                   <Image src="/icons/telephone-outbound-fill.svg" alt="Mic" width={25} height={25} />
                 </div>
               </div>

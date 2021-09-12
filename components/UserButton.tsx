@@ -18,6 +18,7 @@ interface Props {
   newMsg: MessageType | null;
   toggleNeMsg: () => void;
   socket: Socket;
+  onClick?: any;
 }
 const UserButton: FC<Props> = ({ user = defaultUser, newMsg, toggleNeMsg, socket }: Props) => {
   const { receiverUser, setReceiverUser } = useReceiver();

@@ -198,19 +198,8 @@ app
           io.to(connectedUserSocketId).emit("webRTC-signaling", data);
         }
       });
-      socket.on("startCall", (data) => {
-        // io.to(data.userToCall).emit("startCall", { signal: data.signalData, from: data.from });
-        io.sockets.to(data.userToCall).to(socket.id).emit("startCall", { startCall:true, name: data.name, from: data.from, fromName:data.fromName, userToCall:data.userToCall });
-      });
       socket.on("callUser", (data) => {
-        const connectedPeer = connectedPeers.find((peerSocketId) => {
-          return peerSocketId == data.userToCall;
-        });
-        if (connectedPeer) {
-          io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from });
-        } else {
-          io.to(socket.id).emit("callUser", { answer: "کاربر در دسترس نیست" });
-        }
+        io.to(data.userToCall).emit("callUser", { signal: data.signalData, from: data.from });
       });
       socket.on("answerCall", (data) => {
         io.to(data.to).emit("callAccepted", data.signal);

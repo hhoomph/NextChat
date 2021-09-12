@@ -3,9 +3,12 @@ import "webrtc-adapter";
 import React, { useState, useRef, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 import Image from "next/image";
+// import jsCookie from "js-cookie";
 import { User, Constraints, ConnectedUserDetail } from "../types/Types";
 import { Socket } from "socket.io-client";
 import { useReceiver } from "./../contexts/ReceiverContext";
+import Peer from "simple-peer";
+// let pc: RTCPeerConnection;
 type Props = {
   socket: Socket;
   user?: User;
@@ -18,6 +21,10 @@ type Props = {
   rejectCallHandler: () => void;
   preOfferAnswer: string;
   connectedUserDetail: ConnectedUserDetail;
+  localStream: MediaStream | undefined;
+  remoteStream: MediaStream | undefined;
+  setLocalStream: any;
+  answerCall: any;
 };
 const Video = ({
   socket,
@@ -29,7 +36,13 @@ const Video = ({
   rejectCallHandler,
   preOfferAnswer,
   connectedUserDetail,
+  localStream,
+  remoteStream,
+  setLocalStream,
+  answerCall
 }: Props) => {
+  // const token = jsCookie.get("token");
+  // const username = user?.username;
   const { receiverUser } = useReceiver();
   const [constraints] = useState<Constraints>({
     audio: true,
@@ -39,81 +52,14 @@ const Video = ({
     },
     aspectRatio: 1.7777777778,
     echoCancellation: true,
+    // width: { min: 640, max: 640 },
+    // height: { min: 480, max: 480 },
   });
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  // const [screenSharingStream, setScreenSharingStream] = useState<MediaStream | null>(null);
+  // const [isMuted, setIsMuted] = useState<boolean>(false);
+  // const [screenShareActive, setScreenShareActive] = useState<boolean>(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  //  Peer Connection
-  let pc: RTCPeerConnection;
-  const peerRef = useRef<RTCPeerConnection>();
-  const peerConfiguration: RTCConfiguration = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  };
-  const creatPeerConnection = () => {
-    pc = new RTCPeerConnection(peerConfiguration);
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log("onicecandidate");
-        // send our candidate to other peer
-        sendDataUsingWebRTCSignaling({
-          connectedUserSocketId: connectedUserDetail.socketId,
-          type: "ICE_CANDIDATE",
-          candidate: event.candidate,
-        });
-      }
-    };
-    pc.onconnectionstatechange = (event) => {
-      console.log(pc.connectionState);
-      if (pc.connectionState === "connected") {
-        console.log("successfully connected with other peer", event);
-      }
-    };
-    pc.oniceconnectionstatechange = (e) => {
-      console.log(e);
-    };
-    // Receiving Track
-    const remoteStreamFromPeer = new MediaStream();
-    setRemoteStream(remoteStreamFromPeer);
-    pc.ontrack = (event) => {
-      remoteStream?.addTrack(event.track);
-      setRemoteStream(event.streams[0]);
-      if (remoteVideoRef?.current?.srcObject) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-    let remoteVideo = remoteVideoRef.current;
-    if (remoteVideo) {
-      remoteVideo.srcObject = remoteStreamFromPeer;
-    }
-    remoteVideo?.play().catch((e) => {
-      console.log(e);
-    });
-    pc.onnegotiationneeded = () =>
-      peerRef?.current
-        ?.createOffer()
-        .then((offer) => {
-          return peerRef?.current?.setLocalDescription(offer);
-          // await peerRef.current?.setLocalDescription(new RTCSessionDescription(offer));
-        })
-        .then(() => {
-          sendDataUsingWebRTCSignaling({
-            connectedUserSocketId: connectedUserDetail.socketId,
-            type: "OFFER",
-            offer: peerRef?.current?.localDescription,
-          });
-        })
-        .catch((e) => console.log(e));
-    // Add our Stream to peer connection
-    if ((connectedUserDetail.callType === "VIDEO_PERSONAL_CODE" || connectedUserDetail.callType === "AUDIO_PERSONAL_CODE") && localStream) {
-      for (const track of localStream.getTracks()) {
-        pc.addTrack(track, localStream);
-      }
-    } else {
-      console.log("no local stream");
-    }
-    return pc;
-  };
   // Main Video Modal
   const [modal, setModal] = useState<boolean>(false);
   const toggleModal = () => {
@@ -122,6 +68,9 @@ const Video = ({
   const showModal = modal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const modalRef = React.useRef(null);
   // Entering Modal
+  // const toggleEnterModal = () => {
+  //   setEnterModal(!enterModal);
+  // };
   const showEnterModal = enterModal ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   // const enterModalRef = React.useRef(null);
   const [videoBtn, setVideoBtn] = useState<boolean>(false);
@@ -187,86 +136,19 @@ const Video = ({
     }
   }, [remoteStream]);
   useEffect(() => {
-    const sendWebRTCOffer = async () => {
-      peerRef.current = creatPeerConnection();
-      console.log("first :", peerRef.current);
-      const offer = await peerRef.current?.createOffer();
-      await peerRef.current?.setLocalDescription(new RTCSessionDescription(offer));
-      sendDataUsingWebRTCSignaling({
-        connectedUserSocketId: connectedUserDetail.socketId,
-        type: "OFFER",
-        offer: offer,
-      });
-    };
-    if (preOfferAnswer === "CALL_ACCEPTED" && connectedUserDetail.socketId !== null) {
+    if (preOfferAnswer === "CALL_ACCEPTED" && connectedUserDetail.socketId !== null && inOrOutCall == "OutcomingCall") {
       getLocalPrevie();
       setEnterModal(false);
       setModal(true);
       acceptCallHandler();
-      // creatPeerConnection();
-      sendWebRTCOffer();
     }
   }, [preOfferAnswer, connectedUserDetail]);
-  const sendDataUsingWebRTCSignaling = (data: any) => {
-    socket.emit("webRTC-signaling", data);
-  };
-  useEffect(() => {
-    const handleWebRTCOffer = async (data: any) => {
-      peerRef.current = creatPeerConnection();
-      if (peerRef.current) {
-        console.log("second :", peerRef.current);
-        await peerRef.current?.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerRef.current?.createAnswer();
-        await peerRef.current?.setLocalDescription(new RTCSessionDescription(answer));
-        sendDataUsingWebRTCSignaling({
-          connectedUserSocketId: connectedUserDetail.socketId,
-          type: "ANSWER",
-          answer: answer,
-        });
-      }
-    };
-    const handleWebRTCAnswer = async (data: any) => {
-      await peerRef.current?.setRemoteDescription(new RTCSessionDescription(data.answer));
-      console.log("answered");
-    };
-    const handleWebRTCCandidate = async (data: any) => {
-      try {
-        await peerRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate));
-        console.log("get candidate ");
-      } catch (error) {
-        console.log("error occurred when trying to add receiving ice candidate", error);
-      }
-    };
-    if (connectedUserDetail.socketId && connectedUserDetail.socketId !== null) {
-      socket.on("webRTC-signaling", (data) => {
-        switch (data.type) {
-          case "OFFER":
-            handleWebRTCOffer(data);
-            break;
-          case "ANSWER":
-            handleWebRTCAnswer(data);
-            break;
-          case "ICE_CANDIDATE":
-            handleWebRTCCandidate(data);
-            break;
-          default:
-            break;
-        }
-      });
-    }
-    if (socket?.connected) {
-      return () => {
-        socket.off("webRTC-signaling");
-      };
-    }
-  }, [connectedUserDetail, socket]);
   const acceptCall = () => {
     getLocalPrevie();
     setEnterModal(false);
     setModal(true);
     acceptCallHandler();
-    // creatPeerConnection();
-    peerRef.current = creatPeerConnection();
+    answerCall()
   };
   const rejectCall = () => {
     setEnterModal(false);
