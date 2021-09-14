@@ -461,13 +461,15 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       } else {
         setReceivingCall(true);
         // setEnterModal(true);
-        // setCaller(data.from);
-        // setName(data.name);
+        setCaller(data.from);
+        setName(data.name);
         setCallerSignal(data.signal);
       }
     });
     socket.on("endCall", () => {
       console.log("endCall");
+      setName("");
+      setCaller("");
       setReceivingCall(false);
       setEnterModal(false);
       setCallModal(false);
@@ -564,6 +566,8 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     setCallModal(false);
     setVideoBtn(false);
     setCallOut(false);
+    setName("");
+    setCaller("");
     audioRing.pause();
     audioRing.currentTime = 0;
     socket.emit("endCall", {
