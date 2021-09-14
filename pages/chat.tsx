@@ -433,6 +433,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         console.log(error);
       });
   };
+  let timeOut: any;
   useEffect(() => {
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
       setStream(stream);
@@ -451,9 +452,12 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       // getLocalPrevie();
       if (data.answer) {
         setAnswer(data.answer);
-        setTimeout(() => {
+        timeOut = setTimeout(() => {
           setEnterModal(false);
         }, 3000);
+        // setTimeout(() => {
+        //   setEnterModal(false);
+        // }, 3000);
       } else {
         setReceivingCall(true);
         // setEnterModal(true);
@@ -474,6 +478,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       audioRing.currentTime = 0;
       if (connectionRef.current) connectionRef.current.destroy();
     });
+    return () => clearTimeout(timeOut);
   }, [socket]);
   useEffect(() => {
     // getLocalPrevie();
@@ -513,9 +518,9 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     });
     // peer._debug = console.log;
     setPlaceholder(false);
-    peer.on("signal", (data) => {
+    peer.once("signal", (data) => {
       socket.emit("callUser", {
-        userToCall: id,
+        userToCall: receiverUser.ID,
         signalData: data,
         from: socket.id,
         name: receiverUser.username,
@@ -545,7 +550,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     });
     // peer._debug = console.log;
     peer.signal(callerSignal);
-    peer.on("signal", (data) => {
+    peer.once("signal", (data) => {
       socket.emit("answerCall", { signal: data, to: caller });
     });
     peer.on("stream", (stream) => {
