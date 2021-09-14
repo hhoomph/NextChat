@@ -345,7 +345,8 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   };
   const [placeholder, setPlaceholder] = useState<boolean>(true);
   const [stream, setStream] = useState<MediaStream>();
-  const [, setLocalStream] = useState<MediaStream>();
+  const [localStream, setLocalStream] = useState<MediaStream>();
+  const [remoteStream, setRemoteStream] = useState<MediaStream>();
   const [receivingCall, setReceivingCall] = useState(false);
   const [recording] = useState<boolean>(true);
   // const [recording, setRecording] = useState<boolean>(true);
@@ -360,9 +361,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   const [callAccepted, setCallAccepted] = useState<boolean>(false);
   // const [idToCall, setIdToCall] = useState<any>("");
   const showEnterModal =
-    enterModal && stream && !callAccepted
-      ? { display: "block", transition: "all 250ms ease-in-out" }
-      : { display: "none", transition: "all 250ms ease-in-out" };
+    enterModal && !callAccepted ? { display: "block", transition: "all 250ms ease-in-out" } : { display: "none", transition: "all 250ms ease-in-out" };
   const [name, setName] = useState<string>("");
   const myVideo = useRef<HTMLVideoElement>(null);
   const userVideo = useRef<HTMLVideoElement>(null);
@@ -420,6 +419,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       .getUserMedia(constraints)
       .then((stream) => {
         setLocalStream(stream);
+        // connectionRef?.current?.addStream(stream)
         let video = myVideo.current;
         if (video) {
           video.srcObject = stream;
@@ -436,6 +436,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   useEffect(() => {
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
       setStream(stream);
+      setLocalStream(stream);
       if (myVideo?.current) {
         myVideo.current.srcObject = stream;
         myVideo.current?.addEventListener("loadedmetadata", () => {
@@ -476,8 +477,14 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
   }, [socket]);
   useEffect(() => {
     // getLocalPrevie();
+    if (myVideo.current && localStream) {
+      myVideo.current.srcObject = localStream;
+    }
     if (myVideo.current && stream) {
       myVideo.current.srcObject = stream;
+    }
+    if (userVideo.current && remoteStream) {
+      userVideo.current.srcObject = remoteStream;
     }
     let video = myVideo.current;
     video?.addEventListener("loadedmetadata", () => {
@@ -485,7 +492,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
         console.log(e);
       });
     });
-  }, [receivingCall, callAccepted, calling]);
+  }, [receivingCall, callAccepted, calling, videoBtn, localStream, stream, remoteStream]);
   const [callOut, setCallOut] = useState(false);
   const callUser = async (id: string | undefined = receiverUser.ID) => {
     setCallOut(true);
@@ -504,6 +511,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       trickle: false,
       stream: stream,
     });
+    // peer._debug = console.log;
     setPlaceholder(false);
     peer.on("signal", (data) => {
       socket.emit("callUser", {
@@ -514,9 +522,10 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       });
     });
     peer.on("stream", (stream) => {
+      setRemoteStream(stream);
       if (userVideo.current) userVideo.current.srcObject = stream;
     });
-    socket.on("callAccepted", (signal) => {
+    socket.once("callAccepted", (signal) => {
       setCallAccepted(true);
       setPlaceholder(false);
       setCallModal(true);
@@ -534,11 +543,13 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
       trickle: false,
       stream: stream,
     });
+    // peer._debug = console.log;
     peer.signal(callerSignal);
     peer.on("signal", (data) => {
       socket.emit("answerCall", { signal: data, to: caller });
     });
     peer.on("stream", (stream) => {
+      setRemoteStream(stream);
       if (userVideo.current) userVideo.current.srcObject = stream;
     });
     connectionRef.current = peer;
@@ -720,8 +731,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
               <div className="video_call_wrapper">
                 <div
                   className="video_call_btn"
-                  onClick={async () => {
-                    await getReceiverUserId();
+                  onClick={() => {
                     callUser(receiverUser.ID);
                   }}
                 >
@@ -729,8 +739,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
                 </div>
                 <div
                   className="audio_call_btn"
-                  onClick={async () => {
-                    await getReceiverUserId();
+                  onClick={() => {
                     callUser(receiverUser.ID);
                   }}
                 >
