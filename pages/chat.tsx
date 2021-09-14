@@ -501,7 +501,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     });
   }, [receivingCall, callAccepted, calling, videoBtn, localStream, stream, remoteStream]);
   const [callOut, setCallOut] = useState(false);
-  const callUser = async (id: string | undefined = receiverUser.ID) => {
+  const callUser = async () => {
     setCallOut(true);
     await getReceiverUserId();
     setAnswer("");
@@ -741,7 +741,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
                 <div
                   className="video_call_btn"
                   onClick={() => {
-                    callUser(receiverUser.ID);
+                    callUser();
                   }}
                 >
                   <Image src="/icons/video-call-fill.svg" alt="Mic" width={28} height={28} />
@@ -749,7 +749,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
                 <div
                   className="audio_call_btn"
                   onClick={() => {
-                    callUser(receiverUser.ID);
+                    callUser();
                   }}
                 >
                   <Image src="/icons/telephone-outbound-fill.svg" alt="Mic" width={25} height={25} />
