@@ -12,7 +12,7 @@ import { Server, Socket } from "socket.io";
 import OnlineModel from "../model/online";
 import MessageModel from "../model/message";
 // import connectDB from "../database/mongo";
-import jwt from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
 import { User, MessageType } from "../types/Types";
 interface ISocket extends Socket {
   user?: User | undefined;
@@ -27,6 +27,7 @@ const baseUrl =
     ? "http://localhost:".replace(/^http/, "ws") + port
     : "https://nextchatapp.herokuapp.com:".replace(/^http/, "ws") + port;
 const SECRET = process.env.SECRET || "a92955bcf0e92b1deaea647e706bbc9f";
+// const SECRET = process.env.SECRET;
 const socketOption = {
   maxHttpBufferSize: 10 * 1024 * 1024,
   allowEIO3: true,
@@ -69,7 +70,7 @@ app
     const io = new Server(httpServer, socketOption);
     io.use(function (socket: ISocket, next) {
       if (socket.handshake.query && socket.handshake.query.token) {
-        jwt.verify(socket.handshake.query.token.toString(), SECRET, function (err, decoded) {
+        jwt.verify(socket.handshake.query.token.toString(), SECRET, function(err, decoded:any) {
           if (err) return next(new Error("Authentication error"));
           if (decoded?.user) {
             decoded.user.ID = socket.id;

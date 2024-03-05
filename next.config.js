@@ -9,6 +9,7 @@ const nextConfig = {
   reactStrictMode: true,
   sassOptions: {
     includePaths: [path.join(__dirname, "styles")],
+    forceSwcTransforms: true,
   },
   env: {
     Debug_HOST: process.env.Debug_HOST,
@@ -44,6 +45,10 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8080/:path*",
+      },
       {
         source: "/about-us",
         destination: "/about",

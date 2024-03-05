@@ -31,6 +31,7 @@ const fetchData = async (path: string, opts: FetchOptions = {}, token: string | 
     headers["Content-Type"] = "application/json;charset=utf-8";
   }
   headers["Access-Control-Allow-Origin"] = "*";
+  headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
   const baseUrl = process.env.NODE_ENV !== "production" ? process.env.Debug_HOST : process.env.API_HOST;
   const url = baseUrl + path;
   let res;

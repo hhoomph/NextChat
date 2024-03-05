@@ -57,3 +57,6 @@ export type Constraints = {
   height?: Height | number;
   echoCancellation?: boolean;
 };
+// export interface IJwtPayload extends JwtPayload {
+//   user?: User;
+// }
