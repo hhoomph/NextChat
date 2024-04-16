@@ -16,7 +16,7 @@ const initializedSocket = socketIo(baseUrl, {
   multiplex: false,
   transports: ["websocket"],
   upgrade: false,
-  jsonp: false,
+  // jsonp: false,
   reconnection: true,
   reconnectionDelay: 500,
 });

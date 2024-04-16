@@ -27,7 +27,7 @@ export const useSocket = () => {
         multiplex: false,
         transports: ["websocket"],
         upgrade: false,
-        jsonp: false,
+        // jsonp: false,
         reconnection: true,
         reconnectionDelay: 500,
       }).connect()

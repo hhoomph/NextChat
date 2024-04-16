@@ -114,7 +114,7 @@ const ChatPage: NextPage<Props> = ({ user, props }: Props) => {
     multiplex: false,
     transports: ["websocket"],
     upgrade: false,
-    jsonp: false,
+    // jsonp: false,
     reconnection: true,
     reconnectionDelay: 500,
   });

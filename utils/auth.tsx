@@ -80,6 +80,7 @@ export const withAuthSync = (WrappedComponent: NextPage): NextPage => {
         window.localStorage.removeItem("logout");
       };
     }, []);
+    {/* @ts-expect-error Server Component */}
     return <WrappedComponent {...props} />;
   };
   // Wrapper.getInitialProps = async (ctx: NextPageContext) => {
