@@ -16,7 +16,7 @@ import { useUser } from "../contexts/UserContext";
 // import jsCookie from "js-cookie";
 // const token = jsCookie.get("token");
 // const port = parseInt(process.env.PORT || "3000", 10);
-// const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
+// const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://next-chat-beta-five.vercel.app".replace(/^http/, "ws");
 type Props = {
   children?: ReactNode;
   title?: string;

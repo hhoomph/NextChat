@@ -4,7 +4,7 @@ import { io as socketIo, Socket } from "socket.io-client";
 import jsCookie from "js-cookie";
 const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
-const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatapp.herokuapp.com".replace(/^http/, "ws");
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://next-chat-beta-five.vercel.app".replace(/^http/, "ws");
 // export const socket = socketIo(baseUrl, {
 //   withCredentials: true,
 //   query: token ? { token } : undefined,
