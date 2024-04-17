@@ -19,6 +19,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <ReceiverProvider>
         <UserProvider>
           {/* <SocketIoProvider> */}
+          {/* @ts-expect-error Server Component */}
           <Component {...pageProps} />
           {/* </SocketIoProvider> */}
         </UserProvider>

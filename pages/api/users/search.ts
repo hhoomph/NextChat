@@ -28,7 +28,7 @@ const Search = async (req: NextApiRequest, res: NextApiResponse) => {
         res.end();
       }
       const { q } = req.query;
-      let userRes = await UserModel.findSearch(q.toString());
+      let userRes = q ? await UserModel.findSearch(q.toString()) : undefined;
       // If no username, user doesn't exist
       if (!userRes || userRes === null || userRes === undefined) {
         return res.status(404).json({ message: "کاربری با این نام پیدا نشد." });

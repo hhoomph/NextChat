@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect } from "react";
 import { io as socketIo, Socket } from "socket.io-client";
-import { ReservedOrUserListener } from "socket.io-client/build/typed-events";
+// import { ReservedOrUserListener } from "socket.io-client/build/typed-events";
 import jsCookie from "js-cookie";
 // type SocketIoProviderProps = React.PropsWithChildren<{}>;
 type SocketIoProviderProps = { children: React.ReactNode };
@@ -24,7 +24,7 @@ const SocketIoContext = React.createContext<Socket>({} as Socket);
 export function useSocketIo() {
   return useContext(SocketIoContext);
 }
-export function useSocketListener(event: string, fn: ReservedOrUserListener<any, any, any>) {
+export function useSocketListener(event: string, fn: any) {
   const socket = useSocketIo();
   useEffect(() => {
     socket.on(event, fn);
@@ -36,7 +36,7 @@ export function useSocketListener(event: string, fn: ReservedOrUserListener<any,
 // Please note that since Socket.IO v3, the Socket instance does not emit any event related
 // to the reconnection logic anymore. You can listen to the events on the Manager instance directly:
 // https://socket.io/docs/v3/client-socket-instance/
-export function useSocketManagerListener(event: any, fn: ReservedOrUserListener<any, any, any>) {
+export function useSocketManagerListener(event: any, fn: any) {
   const socket = useSocketIo();
   useEffect(() => {
     socket.io.on(event, fn);

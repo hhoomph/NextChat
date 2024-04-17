@@ -45,7 +45,7 @@ const login = async (req: NextApiRequest, res: NextApiResponse) => {
             return res.status(401).json({ message: "رمز عبور اشتباه است." });
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         const { response } = err;
         return response ? res.status(response.status).json({ message: response?.statusText }) : res.status(500).json({ message: err?.message });
       }

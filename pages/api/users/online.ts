@@ -17,7 +17,7 @@ const Online = async (req: NextApiRequest, res: NextApiResponse) => {
         } else {
           return res.status(200).json({ online: true });
         }
-      } catch (err) {
+      } catch (err: any) {
         const { response } = err;
         return response ? res.status(response.status).json({ message: response?.statusText }) : res.status(500).json({ message: err?.message });
       }

@@ -63,7 +63,7 @@ const register = async (req: NextApiRequest, res: NextApiResponse) => {
           return res.status(200).json({ token: token });
           res.end();
         }
-      } catch (err) {
+      } catch (err:any) {
         const { response } = err;
         return response ? res.status(response.status).json({ message: response.statusText }) : res.status(500).json({ message: err.message });
       }

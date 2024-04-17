@@ -1,10 +1,19 @@
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 // Can be changed to make it to multiple user chat
-function arrayLimit(val:Array<string>) {
+interface Conversation {
+  _id: string;
+  userIds: [string];
+  creator: string;
+  status: string;
+  timestamps: { updatedAt: Date; createdAt: Date };
+  updatedAt?: number;
+  createdAt?: number;
+}
+function arrayLimit(val: Array<string>) {
   return val.length === 2;
 }
-function returnResult(stat:string, msg:string, id:string, username?:string, time?:number) {
+function returnResult(stat: string, msg: string, id: string, username?: string, time?: number) {
   return {
     status: stat,
     message: msg,
@@ -13,7 +22,7 @@ function returnResult(stat:string, msg:string, id:string, username?:string, time
     createdAt: time,
   };
 }
-const ConversationSchema = new mongoose.Schema(
+const ConversationSchema = new mongoose.Schema<Conversation>(
   {
     _id: {
       type: String,
