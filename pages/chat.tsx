@@ -25,7 +25,7 @@ import Peer, { Instance } from "simple-peer";
 // import jsCookie from "js-cookie";
 // const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "8080", 10);
-const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatt.netlify.app".replace(/^http/, "ws");
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://next-chat-beta-five.vercel.app".replace(/^http/, "ws");
 // import { useRouter } from "next/router";
 interface Props {
   user?: User;
