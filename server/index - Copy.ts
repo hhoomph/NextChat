@@ -25,7 +25,7 @@ const expressApp = express();
 const baseUrl =
   process.env.NODE_ENV !== "production"
     ? "http://localhost:".replace(/^http/, "ws") + port
-    : "https://next-chat-beta-five.vercel.app:".replace(/^http/, "ws") + port;
+    : "https://nextchatt.netlify.app:".replace(/^http/, "ws") + port;
 const SECRET = process.env.SECRET || "a92955bcf0e92b1deaea647e706bbc9f";
 const socketOption = {
   maxHttpBufferSize: 10 * 1024 * 1024,

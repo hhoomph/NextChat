@@ -1,5 +1,6 @@
 import Document, { DocumentContext, Html, Head, Main, NextScript } from "next/document";
-const baseUrl: string = "localhost:3000";
+const port = parseInt(process.env.PORT || "8080", 10);
+const baseUrl: string = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatt.netlify.app";
 class MyDocument extends Document {
   static async getInitialProps(ctx: DocumentContext) {
     const initialProps = await Document.getInitialProps(ctx);

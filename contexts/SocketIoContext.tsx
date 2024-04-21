@@ -7,7 +7,7 @@ import jsCookie from "js-cookie";
 type SocketIoProviderProps = { children: React.ReactNode };
 const token = jsCookie.get("token");
 const port = parseInt(process.env.PORT || "3000", 10);
-const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://next-chat-beta-five.vercel.app".replace(/^http/, "ws");
+const baseUrl = process.env.NODE_ENV !== "production" ? "http://localhost:" + port : "https://nextchatt.netlify.app".replace(/^http/, "ws");
 // const baseUrl = "http://localhost:".replace(/^http/, "ws") + port;
 const initializedSocket = socketIo(baseUrl, {
   withCredentials: true,
